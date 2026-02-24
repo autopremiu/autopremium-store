@@ -1,0 +1,35 @@
+<%- include('../partials/header') %>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-brand"><i class="fas fa-cog"></i><span>Administración</span></div>
+    <nav class="admin-nav">
+      <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="/admin/productos"><i class="fas fa-box"></i> Productos</a>
+      <a href="/admin/pedidos"><i class="fas fa-shopping-bag"></i> Pedidos</a>
+      <a href="/admin/categorias"><i class="fas fa-tags"></i> Categorías</a>
+      <a href="/admin/usuarios" class="active"><i class="fas fa-users"></i> Usuarios</a>
+      <div class="admin-nav-divider"></div>
+      <a href="/"><i class="fas fa-store"></i> Ver Tienda</a>
+    </nav>
+  </aside>
+  <div class="admin-main">
+    <div class="admin-header"><h1>Usuarios (<%= users.length %>)</h1></div>
+    <div class="admin-card">
+      <table class="admin-table">
+        <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Registro</th></tr></thead>
+        <tbody>
+          <% users.forEach(u => { %>
+          <tr>
+            <td><%= u.full_name %></td>
+            <td><%= u.email %></td>
+            <td><span class="badge-status <%= u.role === 'admin' ? 'status-confirmed' : 'status-processing' %>"><%= u.role %></span></td>
+            <td><span class="badge-status <%= u.is_active ? 'status-confirmed' : 'status-cancelled' %>"><%= u.is_active ? 'Activo' : 'Inactivo' %></span></td>
+            <td><%= new Date(u.created_at).toLocaleDateString('es-CO') %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

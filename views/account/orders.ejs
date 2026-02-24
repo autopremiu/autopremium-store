@@ -1,0 +1,37 @@
+<%- include('../partials/header') %>
+<div class="container" style="padding-top:2rem;padding-bottom:3rem">
+  <div class="account-layout">
+    <aside class="account-sidebar">
+      <div class="account-user"><div class="avatar-circle"><%= user.full_name.charAt(0) %></div><div><strong><%= user.full_name %></strong></div></div>
+      <nav class="account-nav">
+        <a href="/account"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="/account/pedidos" class="active"><i class="fas fa-box"></i> Mis Pedidos</a>
+        <a href="/account/perfil"><i class="fas fa-user"></i> Mi Perfil</a>
+        <a href="/account/direcciones"><i class="fas fa-map-marker-alt"></i> Direcciones</a>
+      </nav>
+    </aside>
+    <div class="account-main">
+      <h2>Mis Pedidos</h2>
+      <% if (orders.length > 0) { %>
+      <table class="admin-table">
+        <thead><tr><th>#Pedido</th><th>Fecha</th><th>Artículos</th><th>Total</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          <% orders.forEach(o => { %>
+          <tr>
+            <td><%= o.order_number %></td>
+            <td><%= new Date(o.created_at).toLocaleDateString('es-CO') %></td>
+            <td><%= o.order_items?.length || 0 %> items</td>
+            <td>$<%= Number(o.total).toLocaleString('es-CO') %></td>
+            <td><span class="badge-status status-<%= o.status %>"><%= o.status %></span></td>
+            <td><a href="/account/pedidos/<%= o.order_number %>" class="btn btn-sm btn-outline">Ver</a></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      <% } else { %>
+      <div class="empty-state"><i class="fas fa-box-open"></i><p>No tienes pedidos aún</p></div>
+      <% } %>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

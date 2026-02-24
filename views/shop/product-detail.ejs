@@ -1,0 +1,169 @@
+<%- include('../partials/header') %>
+
+<div class="container" style="padding-top:2rem;padding-bottom:3rem">
+  <div class="breadcrumb">
+    <a href="/">Inicio</a> <i class="fas fa-chevron-right"></i>
+    <a href="/productos">Catálogo</a> <i class="fas fa-chevron-right"></i>
+    <span><%= product.name %></span>
+  </div>
+
+  <div class="product-detail-grid">
+    <!-- IMAGES -->
+    <div class="product-gallery">
+      <div class="main-img-wrap">
+        <% if (product.thumbnail) { %>
+          <img src="<%= product.thumbnail %>" alt="<%= product.name %>" id="mainImg">
+        <% } else { %>
+          <div class="product-img-placeholder large"><i class="fas fa-cog"></i></div>
+        <% } %>
+        <% if (product.compare_price > product.price) { %>
+          <span class="badge-discount lg">-<%= Math.round((1 - product.price/product.compare_price)*100) %>% OFF</span>
+        <% } %>
+      </div>
+      <% if (product.images && product.images.length > 1) { %>
+      <div class="img-thumbs">
+        <% product.images.forEach(img => { %>
+        <img src="<%= img %>" onclick="document.getElementById('mainImg').src=this.src" class="thumb">
+        <% }) %>
+      </div>
+      <% } %>
+    </div>
+
+    <!-- INFO -->
+    <div class="product-detail-info">
+      <div class="product-meta">
+        <% if (product.brands) { %><span class="brand-tag"><%= product.brands.name %></span><% } %>
+        <% if (product.sku) { %><span class="sku-tag">SKU: <%= product.sku %></span><% } %>
+      </div>
+      <h1><%= product.name %></h1>
+
+      <div class="product-rating-detail">
+        <% for(let i=1;i<=5;i++) { %><i class="fas fa-star <%= i<=Math.round(product.rating||0)?'active':'' %>"></i><% } %>
+        <span><%= product.review_count %> reseñas</span>
+      </div>
+
+      <div class="price-detail">
+        <span class="price-main">$<%= Number(product.price).toLocaleString('es-CO') %></span>
+        <% if (product.compare_price > product.price) { %>
+          <span class="price-old-lg">$<%= Number(product.compare_price).toLocaleString('es-CO') %></span>
+          <span class="save-badge">Ahorras $<%= Number(product.compare_price - product.price).toLocaleString('es-CO') %></span>
+        <% } %>
+      </div>
+
+      <div class="stock-status">
+        <% if (product.stock > 0) { %>
+          <span class="in-stock"><i class="fas fa-check-circle"></i> En stock (<%= product.stock %> disponibles)</span>
+        <% } else { %>
+          <span class="out-stock"><i class="fas fa-times-circle"></i> Agotado</span>
+        <% } %>
+      </div>
+
+      <% if (product.short_description) { %>
+      <p class="short-desc"><%= product.short_description %></p>
+      <% } %>
+
+      <% if (product.compatible_cars && product.compatible_cars.length > 0) { %>
+      <div class="compatible-cars">
+        <strong>Compatibilidad:</strong>
+        <% product.compatible_cars.forEach(car => { %><span class="car-tag"><%= car %></span><% }) %>
+      </div>
+      <% } %>
+
+      <div class="add-cart-form">
+        <div class="qty-control">
+          <button type="button" onclick="changeQty(-1)">−</button>
+          <input type="number" value="1" min="1" max="<%= product.stock %>" id="qty">
+          <button type="button" onclick="changeQty(1)">+</button>
+        </div>
+        <button class="btn btn-primary btn-lg btn-add-cart" data-id="<%= product.id %>" data-name="<%= product.name %>" id="addCartBtn" <%= product.stock < 1 ? 'disabled' : '' %>>
+          <i class="fas fa-cart-plus"></i> Agregar al Carrito
+        </button>
+      </div>
+
+      <div class="product-features">
+        <div><i class="fas fa-truck"></i> Envío gratis en pedidos +$150.000</div>
+        <div><i class="fas fa-shield-alt"></i> Garantía del fabricante</div>
+        <div><i class="fas fa-undo"></i> Devoluciones en 30 días</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESCRIPTION & SPECS -->
+  <div class="product-tabs">
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="showTab('desc', this)">Descripción</button>
+      <button class="tab-btn" onclick="showTab('specs', this)">Especificaciones</button>
+      <button class="tab-btn" onclick="showTab('reviews', this)">Reseñas (<%= reviews.length %>)</button>
+    </div>
+
+    <div class="tab-content active" id="tab-desc">
+      <div class="description-content"><%- product.description || '<p>Sin descripción disponible.</p>' %></div>
+    </div>
+
+    <div class="tab-content" id="tab-specs">
+      <% if (product.specifications && Object.keys(product.specifications).length > 0) { %>
+      <table class="specs-table">
+        <% Object.entries(product.specifications).forEach(([k,v]) => { %>
+        <tr><td><%= k %></td><td><%= v %></td></tr>
+        <% }) %>
+      </table>
+      <% } else { %><p>Sin especificaciones disponibles.</p><% } %>
+    </div>
+
+    <div class="tab-content" id="tab-reviews">
+      <% if (reviews.length > 0) { %>
+        <% reviews.forEach(r => { %>
+        <div class="review-item">
+          <div class="review-header">
+            <strong><%= r.users?.full_name || 'Cliente' %></strong>
+            <div><% for(let i=1;i<=5;i++) { %><i class="fas fa-star <%= i<=r.rating?'active':'' %>"></i><% } %></div>
+          </div>
+          <% if (r.title) { %><h4><%= r.title %></h4><% } %>
+          <p><%= r.comment %></p>
+        </div>
+        <% }) %>
+      <% } else { %><p>Aún no hay reseñas para este producto.</p><% } %>
+    </div>
+  </div>
+
+  <!-- RELATED PRODUCTS -->
+  <% if (related.length > 0) { %>
+  <div class="section-header" style="margin-top:3rem">
+    <h2>Productos Relacionados</h2>
+  </div>
+  <div class="products-grid">
+    <%- include('../partials/product-cards', { products: related }) %>
+  </div>
+  <% } %>
+</div>
+
+<script>
+function changeQty(delta) {
+  const qty = document.getElementById('qty');
+  qty.value = Math.max(1, Math.min(<%= product.stock %>, parseInt(qty.value) + delta));
+}
+
+function showTab(tabId, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tabId).classList.add('active');
+  btn.classList.add('active');
+}
+
+// Override add to cart for this page to use quantity
+document.getElementById('addCartBtn').addEventListener('click', function() {
+  const qty = document.getElementById('qty').value;
+  fetch('/cart/agregar', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ product_id: '<%= product.id %>', quantity: qty })
+  }).then(r => r.json()).then(data => {
+    if (data.success) {
+      document.getElementById('cartCount').textContent = data.cart.count;
+      showCartNotification(data.message);
+    }
+  });
+});
+</script>
+
+<%- include('../partials/footer') %>

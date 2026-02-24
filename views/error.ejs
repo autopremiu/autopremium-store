@@ -1,0 +1,10 @@
+<%- include('partials/header') %>
+<div class="container" style="padding:5rem 0;text-align:center">
+  <div class="empty-state">
+    <i class="fas fa-exclamation-triangle" style="font-size:3rem;color:var(--red)"></i>
+    <h2>Error del servidor</h2>
+    <p><%= message || 'Ocurrió un error inesperado.' %></p>
+    <a href="/" class="btn btn-primary">Volver al inicio</a>
+  </div>
+</div>
+<%- include('partials/footer') %>

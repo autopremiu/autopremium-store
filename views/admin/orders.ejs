@@ -1,0 +1,46 @@
+<%- include('../partials/header') %>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-brand"><i class="fas fa-cog"></i><span>Administración</span></div>
+    <nav class="admin-nav">
+      <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="/admin/productos"><i class="fas fa-box"></i> Productos</a>
+      <a href="/admin/pedidos" class="active"><i class="fas fa-shopping-bag"></i> Pedidos</a>
+      <a href="/admin/categorias"><i class="fas fa-tags"></i> Categorías</a>
+      <a href="/admin/usuarios"><i class="fas fa-users"></i> Usuarios</a>
+      <div class="admin-nav-divider"></div>
+      <a href="/"><i class="fas fa-store"></i> Ver Tienda</a>
+    </nav>
+  </aside>
+  <div class="admin-main">
+    <div class="admin-header">
+      <h1>Pedidos (<%= total %>)</h1>
+      <div class="filter-tabs">
+        <a href="/admin/pedidos" class="<%= !status ? 'active' : '' %>">Todos</a>
+        <a href="/admin/pedidos?status=pending" class="<%= status==='pending' ? 'active' : '' %>">Pendientes</a>
+        <a href="/admin/pedidos?status=confirmed" class="<%= status==='confirmed' ? 'active' : '' %>">Confirmados</a>
+        <a href="/admin/pedidos?status=shipped" class="<%= status==='shipped' ? 'active' : '' %>">Enviados</a>
+        <a href="/admin/pedidos?status=delivered" class="<%= status==='delivered' ? 'active' : '' %>">Entregados</a>
+      </div>
+    </div>
+    <div class="admin-card">
+      <table class="admin-table">
+        <thead><tr><th>#Pedido</th><th>Cliente</th><th>Total</th><th>Estado</th><th>Pago</th><th>Fecha</th><th>Acción</th></tr></thead>
+        <tbody>
+          <% orders.forEach(o => { %>
+          <tr>
+            <td><a href="/admin/pedidos/<%= o.id %>"><%= o.order_number %></a></td>
+            <td><%= o.users?.full_name || 'N/A' %><br><small><%= o.users?.email %></small></td>
+            <td>$<%= Number(o.total).toLocaleString('es-CO') %></td>
+            <td><span class="badge-status status-<%= o.status %>"><%= o.status %></span></td>
+            <td><span class="badge-status pay-<%= o.payment_status %>"><%= o.payment_status %></span></td>
+            <td><%= new Date(o.created_at).toLocaleDateString('es-CO') %></td>
+            <td><a href="/admin/pedidos/<%= o.id %>" class="btn btn-sm btn-outline">Ver</a></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

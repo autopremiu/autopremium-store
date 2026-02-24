@@ -1,0 +1,200 @@
+<%- include('../partials/header') %>
+<script src="https://js.stripe.com/v3/"></script>
+
+<div class="container" style="padding-top:2rem;padding-bottom:3rem">
+  <h1 class="page-title">Finalizar Compra</h1>
+
+  <div class="checkout-layout">
+    <!-- LEFT: FORM -->
+    <div class="checkout-form">
+      <!-- SHIPPING ADDRESS -->
+      <div class="checkout-section">
+        <h3><span class="step-num">1</span> Dirección de Envío</h3>
+        
+        <% if (addresses.length > 0) { %>
+        <div class="saved-addresses">
+          <% addresses.forEach(addr => { %>
+          <label class="addr-option">
+            <input type="radio" name="saved_address" value='<%= JSON.stringify(addr) %>' onchange="fillAddress(this.value)">
+            <div>
+              <strong><%= addr.full_name %></strong>
+              <span><%= addr.address_line1 %>, <%= addr.city %>, <%= addr.state %></span>
+            </div>
+          </label>
+          <% }) %>
+          <label class="addr-option">
+            <input type="radio" name="saved_address" value="new" checked onchange="fillAddress('new')">
+            <div><strong>Nueva dirección</strong></div>
+          </label>
+        </div>
+        <% } %>
+
+        <div id="addressForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nombre completo *</label>
+              <input type="text" id="addrName" value="<%= user.full_name %>" required>
+            </div>
+            <div class="form-group">
+              <label>Teléfono *</label>
+              <input type="text" id="addrPhone" placeholder="300 000 0000" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Dirección *</label>
+            <input type="text" id="addrLine1" placeholder="Calle, carrera, número" required>
+          </div>
+          <div class="form-group">
+            <label>Apartamento / Torre (opcional)</label>
+            <input type="text" id="addrLine2" placeholder="Apto 101, Torre B">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Ciudad *</label>
+              <input type="text" id="addrCity" required>
+            </div>
+            <div class="form-group">
+              <label>Departamento *</label>
+              <input type="text" id="addrState" required>
+            </div>
+            <div class="form-group">
+              <label>Código Postal</label>
+              <input type="text" id="addrPostal">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAYMENT -->
+      <div class="checkout-section">
+        <h3><span class="step-num">2</span> Método de Pago</h3>
+        <div class="payment-methods">
+          <label class="pay-option active">
+            <input type="radio" name="payment_method" value="stripe" checked>
+            <i class="fab fa-stripe"></i> Tarjeta de Crédito/Débito
+          </label>
+        </div>
+        <div id="stripe-container">
+          <div id="payment-element" class="stripe-element"></div>
+          <div id="payment-errors" class="payment-error"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Notas del pedido (opcional)</label>
+        <textarea id="orderNotes" rows="3" placeholder="Instrucciones especiales para la entrega..."></textarea>
+      </div>
+
+      <button id="placeOrderBtn" class="btn btn-primary btn-lg" style="width:100%">
+        <i class="fas fa-lock"></i> Confirmar Pedido — $<%= Number(cart.total).toLocaleString('es-CO') %>
+      </button>
+      <p class="secure-msg"><i class="fas fa-shield-alt"></i> Pago seguro encriptado con SSL</p>
+    </div>
+
+    <!-- RIGHT: SUMMARY -->
+    <div class="order-summary">
+      <h3>Tu Pedido (<%= cart.count %> artículos)</h3>
+      <div class="order-items">
+        <% cart.items.forEach(item => { %>
+        <div class="order-item">
+          <div class="order-item-img">
+            <% if (item.thumbnail) { %><img src="<%= item.thumbnail %>" alt="<%= item.name %>"><% } else { %><div class="product-img-placeholder xs"><i class="fas fa-cog"></i></div><% } %>
+            <span class="item-qty-badge"><%= item.quantity %></span>
+          </div>
+          <div class="order-item-info">
+            <span><%= item.name %></span>
+          </div>
+          <div class="order-item-price">$<%= Number(item.price * item.quantity).toLocaleString('es-CO') %></div>
+        </div>
+        <% }) %>
+      </div>
+      <div class="summary-lines">
+        <div class="summary-line"><span>Subtotal</span><span>$<%= Number(cart.subtotal || cart.total).toLocaleString('es-CO') %></span></div>
+        <div class="summary-line"><span>Envío</span><span>Gratis</span></div>
+        <div class="summary-line total"><span>Total</span><span>$<%= Number(cart.total).toLocaleString('es-CO') %></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const stripe = Stripe('<%= stripePK %>');
+let elements, paymentElement;
+
+async function initStripe() {
+  const res = await fetch('/checkout/crear-pago', { method: 'POST' });
+  const data = await res.json();
+  if (data.error) { document.getElementById('payment-errors').textContent = data.error; return; }
+
+  elements = stripe.elements({ clientSecret: data.clientSecret });
+  paymentElement = elements.create('payment', { layout: 'tabs' });
+  paymentElement.mount('#payment-element');
+  window._clientSecret = data.clientSecret;
+}
+
+function getAddress() {
+  return JSON.stringify({
+    full_name: document.getElementById('addrName').value,
+    phone: document.getElementById('addrPhone').value,
+    address_line1: document.getElementById('addrLine1').value,
+    address_line2: document.getElementById('addrLine2').value,
+    city: document.getElementById('addrCity').value,
+    state: document.getElementById('addrState').value,
+    postal_code: document.getElementById('addrPostal').value,
+    country: 'Colombia'
+  });
+}
+
+function fillAddress(val) {
+  if (val === 'new') { document.getElementById('addressForm').style.display = 'block'; return; }
+  const addr = JSON.parse(val);
+  document.getElementById('addrName').value = addr.full_name || '';
+  document.getElementById('addrPhone').value = addr.phone || '';
+  document.getElementById('addrLine1').value = addr.address_line1 || '';
+  document.getElementById('addrLine2').value = addr.address_line2 || '';
+  document.getElementById('addrCity').value = addr.city || '';
+  document.getElementById('addrState').value = addr.state || '';
+  document.getElementById('addrPostal').value = addr.postal_code || '';
+}
+
+document.getElementById('placeOrderBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('placeOrderBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+
+  try {
+    // Confirm payment with Stripe
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      confirmParams: { return_url: window.location.origin + '/checkout/confirmacion/pending' },
+      redirect: 'if_required'
+    });
+
+    if (error) {
+      document.getElementById('payment-errors').textContent = error.message;
+      btn.disabled = false; btn.innerHTML = '<i class="fas fa-lock"></i> Confirmar Pedido';
+      return;
+    }
+
+    // Place order
+    const res = await fetch('/checkout/confirmar', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ shipping_address: getAddress(), payment_intent_id: paymentIntent?.id, notes: document.getElementById('orderNotes').value })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      window.location.href = '/checkout/confirmacion/' + data.order_number;
+    } else {
+      document.getElementById('payment-errors').textContent = data.message;
+      btn.disabled = false; btn.innerHTML = '<i class="fas fa-lock"></i> Confirmar Pedido';
+    }
+  } catch (err) {
+    document.getElementById('payment-errors').textContent = 'Error al procesar el pago. Intenta de nuevo.';
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-lock"></i> Confirmar Pedido';
+  }
+});
+
+initStripe();
+</script>
+
+<%- include('../partials/footer') %>

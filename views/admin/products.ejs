@@ -1,0 +1,80 @@
+<%- include('../partials/header') %>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-brand"><i class="fas fa-cog"></i><span>Administración</span></div>
+    <nav class="admin-nav">
+      <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="/admin/productos" class="active"><i class="fas fa-box"></i> Productos</a>
+      <a href="/admin/pedidos"><i class="fas fa-shopping-bag"></i> Pedidos</a>
+      <a href="/admin/categorias"><i class="fas fa-tags"></i> Categorías</a>
+      <a href="/admin/usuarios"><i class="fas fa-users"></i> Usuarios</a>
+      <div class="admin-nav-divider"></div>
+      <a href="/"><i class="fas fa-store"></i> Ver Tienda</a>
+    </nav>
+  </aside>
+
+  <div class="admin-main">
+    <div class="admin-header">
+      <h1>Productos (<%= total %>)</h1>
+      <a href="/admin/productos/nuevo" class="btn btn-primary"><i class="fas fa-plus"></i> Nuevo</a>
+    </div>
+
+    <div class="admin-toolbar">
+      <form action="/admin/productos" method="GET" class="search-form-admin">
+        <input type="text" name="q" value="<%= q || '' %>" placeholder="Buscar productos...">
+        <button type="submit" class="btn btn-outline btn-sm">Buscar</button>
+      </form>
+    </div>
+
+    <div class="admin-card">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>SKU</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Categoría</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% products.forEach(p => { %>
+          <tr>
+            <td>
+              <div class="product-thumb-row">
+                <% if (p.thumbnail) { %><img src="<%= p.thumbnail %>" class="thumb-xs"><% } %>
+                <a href="/producto/<%= p.slug %>"><%= p.name %></a>
+              </div>
+            </td>
+            <td><%= p.sku || '—' %></td>
+            <td>$<%= Number(p.price).toLocaleString('es-CO') %></td>
+            <td><span class="<%= p.stock <= 5 ? 'text-danger' : '' %>"><%= p.stock %></span></td>
+            <td><%= p.categories?.name || '—' %></td>
+            <td><span class="badge-status <%= p.is_active ? 'status-confirmed' : 'status-cancelled' %>"><%= p.is_active ? 'Activo' : 'Inactivo' %></span></td>
+            <td>
+              <div class="action-btns">
+                <a href="/admin/productos/<%= p.id %>/editar" class="btn btn-sm btn-outline"><i class="fas fa-edit"></i></a>
+                <form action="/admin/productos/<%= p.id %>/eliminar" method="POST" onsubmit="return confirm('¿Desactivar este producto?')">
+                  <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          <% }) %>
+          <% if (products.length === 0) { %><tr><td colspan="7" class="text-center">No hay productos</td></tr><% } %>
+        </tbody>
+      </table>
+
+      <% if (totalPages > 1) { %>
+      <div class="pagination" style="padding:1rem">
+        <% for(let i=1;i<=totalPages;i++) { %><a href="?page=<%= i %><%= q ? '&q='+q : '' %>" class="page-btn <%= i===page?'active':'' %>"><%= i %></a><% } %>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,37 @@
+<% products.forEach(product => { %>
+<div class="product-card">
+  <a href="/producto/<%= product.slug %>" class="product-link">
+    <div class="product-img-wrap">
+      <% if (product.thumbnail) { %>
+        <img src="<%= product.thumbnail %>" alt="<%= product.name %>" loading="lazy">
+      <% } else { %>
+        <div class="product-img-placeholder"><i class="fas fa-cog"></i></div>
+      <% } %>
+      <% if (product.compare_price && product.compare_price > product.price) { %>
+        <span class="badge-discount">-<%= Math.round((1 - product.price/product.compare_price)*100) %>%</span>
+      <% } %>
+      <% if (product.is_featured) { %><span class="badge-featured">Destacado</span><% } %>
+    </div>
+    <div class="product-info">
+      <div class="product-brand"><%= product.brands?.name || product.brand?.name || '' %></div>
+      <h3 class="product-name"><%= product.name %></h3>
+      <div class="product-rating">
+        <% for(let i=1;i<=5;i++) { %><i class="fas fa-star <%= i <= Math.round(product.rating || 0) ? 'active' : '' %>"></i><% } %>
+        <span>(<%= product.review_count || 0 %>)</span>
+      </div>
+      <div class="product-price">
+        <span class="price-current">$<%= Number(product.price).toLocaleString('es-CO') %></span>
+        <% if (product.compare_price && product.compare_price > product.price) { %>
+          <span class="price-old">$<%= Number(product.compare_price).toLocaleString('es-CO') %></span>
+        <% } %>
+      </div>
+    </div>
+  </a>
+  <div class="product-actions">
+    <button class="btn btn-primary btn-add-cart" data-id="<%= product.id %>" data-name="<%= product.name %>">
+      <i class="fas fa-cart-plus"></i> Agregar
+    </button>
+    <button class="btn btn-icon-sm btn-wishlist"><i class="far fa-heart"></i></button>
+  </div>
+</div>
+<% }) %>

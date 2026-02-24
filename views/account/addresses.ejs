@@ -1,0 +1,46 @@
+<%- include('../partials/header') %>
+<div class="container" style="padding-top:2rem;padding-bottom:3rem">
+  <div class="account-layout">
+    <aside class="account-sidebar">
+      <div class="account-user"><div class="avatar-circle"><%= user.full_name.charAt(0) %></div><div><strong><%= user.full_name %></strong></div></div>
+      <nav class="account-nav">
+        <a href="/account"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="/account/pedidos"><i class="fas fa-box"></i> Mis Pedidos</a>
+        <a href="/account/perfil"><i class="fas fa-user"></i> Mi Perfil</a>
+        <a href="/account/direcciones" class="active"><i class="fas fa-map-marker-alt"></i> Direcciones</a>
+      </nav>
+    </aside>
+    <div class="account-main">
+      <h2>Mis Direcciones</h2>
+      <div class="addresses-grid">
+        <% addresses.forEach(addr => { %>
+        <div class="address-card">
+          <strong><%= addr.full_name %></strong>
+          <p><%= addr.address_line1 %><% if(addr.address_line2) { %>, <%= addr.address_line2 %><% } %></p>
+          <p><%= addr.city %>, <%= addr.state %> <%= addr.postal_code %></p>
+          <form action="/account/direcciones/<%= addr.id %>/eliminar" method="POST">
+            <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar dirección?')">Eliminar</button>
+          </form>
+        </div>
+        <% }) %>
+        
+        <div class="address-card new-addr">
+          <h4>Nueva Dirección</h4>
+          <form action="/account/direcciones" method="POST">
+            <div class="form-group"><input type="text" name="full_name" placeholder="Nombre completo" required value="<%= user.full_name %>"></div>
+            <div class="form-group"><input type="text" name="phone" placeholder="Teléfono"></div>
+            <div class="form-group"><input type="text" name="address_line1" placeholder="Dirección" required></div>
+            <div class="form-group"><input type="text" name="address_line2" placeholder="Apto/Torre"></div>
+            <div class="form-row">
+              <input type="text" name="city" placeholder="Ciudad" required>
+              <input type="text" name="state" placeholder="Departamento" required>
+              <input type="text" name="postal_code" placeholder="C.P.">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm" style="margin-top:0.5rem">Guardar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

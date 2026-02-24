@@ -1,0 +1,107 @@
+<%- include('../partials/header') %>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-brand"><i class="fas fa-cog"></i><span>Administración</span></div>
+    <nav class="admin-nav">
+      <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="/admin/productos" class="active"><i class="fas fa-box"></i> Productos</a>
+      <a href="/admin/pedidos"><i class="fas fa-shopping-bag"></i> Pedidos</a>
+      <a href="/admin/categorias"><i class="fas fa-tags"></i> Categorías</a>
+      <a href="/admin/usuarios"><i class="fas fa-users"></i> Usuarios</a>
+      <div class="admin-nav-divider"></div>
+      <a href="/"><i class="fas fa-store"></i> Ver Tienda</a>
+    </nav>
+  </aside>
+
+  <div class="admin-main">
+    <div class="admin-header">
+      <h1><%= product ? 'Editar Producto' : 'Nuevo Producto' %></h1>
+      <a href="/admin/productos" class="btn btn-outline">← Volver</a>
+    </div>
+
+    <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+
+    <form action="/admin/productos/<%= product ? product.id + '/editar' : 'nuevo' %>" method="POST" class="admin-card" style="padding:2rem">
+      <div class="form-row">
+        <div class="form-group" style="flex:2">
+          <label>Nombre del Producto *</label>
+          <input type="text" name="name" value="<%= product?.name || '' %>" required placeholder="Ej: Pastilla de freno Bosch">
+        </div>
+        <div class="form-group">
+          <label>SKU</label>
+          <input type="text" name="sku" value="<%= product?.sku || '' %>" placeholder="BOX-001">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Descripción Corta</label>
+        <input type="text" name="short_description" value="<%= product?.short_description || '' %>" placeholder="Descripción breve para listados">
+      </div>
+
+      <div class="form-group">
+        <label>Descripción Completa</label>
+        <textarea name="description" rows="6" placeholder="Descripción detallada del producto..."><%= product?.description || '' %></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Precio *</label>
+          <input type="number" name="price" value="<%= product?.price || '' %>" required step="0.01" placeholder="45000">
+        </div>
+        <div class="form-group">
+          <label>Precio Tachado (opcional)</label>
+          <input type="number" name="compare_price" value="<%= product?.compare_price || '' %>" step="0.01" placeholder="60000">
+        </div>
+        <div class="form-group">
+          <label>Stock *</label>
+          <input type="number" name="stock" value="<%= product?.stock || 0 %>" required min="0">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Categoría</label>
+          <select name="category_id">
+            <option value="">Sin categoría</option>
+            <% categories.forEach(cat => { %>
+            <option value="<%= cat.id %>" <%= product?.category_id === cat.id ? 'selected' : '' %>><%= cat.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Marca</label>
+          <select name="brand_id">
+            <option value="">Sin marca</option>
+            <% brands.forEach(brand => { %>
+            <option value="<%= brand.id %>" <%= product?.brand_id === brand.id ? 'selected' : '' %>><%= brand.name %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>URL de Imagen Principal</label>
+        <input type="url" name="thumbnail" value="<%= product?.thumbnail || '' %>" placeholder="https://...">
+      </div>
+
+      <div class="form-row" style="align-items:center;gap:2rem;margin-top:0.5rem">
+        <label class="toggle-check">
+          <input type="checkbox" name="is_active" <%= !product || product.is_active ? 'checked' : '' %>>
+          <span>Producto activo</span>
+        </label>
+        <label class="toggle-check">
+          <input type="checkbox" name="is_featured" <%= product?.is_featured ? 'checked' : '' %>>
+          <span>Producto destacado</span>
+        </label>
+      </div>
+
+      <div style="margin-top:2rem;display:flex;gap:1rem">
+        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save"></i> Guardar Producto</button>
+        <a href="/admin/productos" class="btn btn-outline btn-lg">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

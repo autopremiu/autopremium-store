@@ -1,0 +1,143 @@
+<%- include('../partials/header') %>
+
+<div class="container" style="padding-top:2rem;padding-bottom:3rem">
+  <h1 class="page-title">Carrito de Compras</h1>
+
+  <% if (!cart.items || cart.items.length === 0) { %>
+  <div class="empty-state" style="margin-top:3rem">
+    <i class="fas fa-shopping-cart"></i>
+    <h3>Tu carrito está vacío</h3>
+    <p>Agrega productos desde nuestro catálogo</p>
+    <a href="/productos" class="btn btn-primary btn-lg">Ir al Catálogo</a>
+  </div>
+  <% } else { %>
+
+  <div class="cart-layout">
+    <div class="cart-items-list">
+      <% cart.items.forEach(item => { %>
+      <div class="cart-item" id="cart-item-<%= item.id %>">
+        <div class="cart-item-img">
+          <% if (item.thumbnail) { %>
+            <img src="<%= item.thumbnail %>" alt="<%= item.name %>">
+          <% } else { %>
+            <div class="product-img-placeholder sm"><i class="fas fa-cog"></i></div>
+          <% } %>
+        </div>
+        <div class="cart-item-info">
+          <a href="/producto/<%= item.slug %>"><%= item.name %></a>
+          <% if (item.sku) { %><span class="sku-small">SKU: <%= item.sku %></span><% } %>
+          <span class="item-unit-price">$<%= Number(item.price).toLocaleString('es-CO') %> c/u</span>
+        </div>
+        <div class="cart-item-qty">
+          <button onclick="updateQty('<%= item.id %>', <%= item.quantity - 1 %>)">−</button>
+          <span id="qty-<%= item.id %>"><%= item.quantity %></span>
+          <button onclick="updateQty('<%= item.id %>', <%= item.quantity + 1 %>)">+</button>
+        </div>
+        <div class="cart-item-total" id="total-<%= item.id %>">
+          $<%= Number(item.price * item.quantity).toLocaleString('es-CO') %>
+        </div>
+        <button class="btn-remove" onclick="removeItem('<%= item.id %>')"><i class="fas fa-trash"></i></button>
+      </div>
+      <% }) %>
+    </div>
+
+    <div class="cart-summary">
+      <h3>Resumen del Pedido</h3>
+      
+      <div class="coupon-form">
+        <input type="text" id="couponInput" placeholder="Código de cupón">
+        <button onclick="applyCoupon()" class="btn btn-outline btn-sm">Aplicar</button>
+        <div id="couponMsg" class="coupon-msg"></div>
+      </div>
+
+      <div class="summary-lines">
+        <div class="summary-line">
+          <span>Subtotal</span>
+          <span id="summarySubtotal">$<%= Number(cart.subtotal || cart.total).toLocaleString('es-CO') %></span>
+        </div>
+        <div class="summary-line" id="discountLine" style="display:none;color:#e63946">
+          <span>Descuento</span>
+          <span id="discountAmount">-$0</span>
+        </div>
+        <div class="summary-line">
+          <span>Envío</span>
+          <span>Gratis</span>
+        </div>
+        <div class="summary-line total">
+          <span>Total</span>
+          <span id="summaryTotal">$<%= Number(cart.total).toLocaleString('es-CO') %></span>
+        </div>
+      </div>
+
+      <a href="/checkout" class="btn btn-primary btn-lg" style="width:100%;text-align:center;display:block">
+        <i class="fas fa-lock"></i> Finalizar Compra
+      </a>
+      <a href="/productos" class="btn btn-outline" style="width:100%;text-align:center;display:block;margin-top:0.5rem">
+        Seguir Comprando
+      </a>
+    </div>
+  </div>
+
+  <% } %>
+</div>
+
+<script>
+function formatPrice(n) {
+  return '$' + Math.round(n).toLocaleString('es-CO');
+}
+
+function updateQty(id, qty) {
+  fetch('/cart/actualizar', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ product_id: id, quantity: qty })
+  }).then(r => r.json()).then(data => {
+    if (data.success) {
+      if (qty <= 0) {
+        document.getElementById('cart-item-' + id)?.remove();
+      } else {
+        const item = data.cart.items.find(i => i.id === id);
+        if (item) {
+          document.getElementById('qty-' + id).textContent = item.quantity;
+          document.getElementById('total-' + id).textContent = formatPrice(item.price * item.quantity);
+        }
+      }
+      document.getElementById('cartCount').textContent = data.cart.count;
+      document.getElementById('summarySubtotal').textContent = formatPrice(data.cart.subtotal);
+      document.getElementById('summaryTotal').textContent = formatPrice(data.cart.total);
+      if (data.cart.count === 0) location.reload();
+    }
+  });
+}
+
+function removeItem(id) {
+  fetch('/cart/eliminar', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ product_id: id })
+  }).then(r => r.json()).then(data => {
+    document.getElementById('cart-item-' + id)?.remove();
+    document.getElementById('cartCount').textContent = data.cart.count;
+    document.getElementById('summaryTotal').textContent = formatPrice(data.cart.total);
+    if (data.cart.count === 0) location.reload();
+  });
+}
+
+async function applyCoupon() {
+  const code = document.getElementById('couponInput').value;
+  const total = parseFloat('<%= cart.total %>');
+  const res = await fetch('/api/coupon', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ code, total }) });
+  const data = await res.json();
+  const msg = document.getElementById('couponMsg');
+  if (data.success) {
+    msg.className = 'coupon-msg success';
+    msg.textContent = `Cupón aplicado: -${data.type === 'percentage' ? data.value + '%' : formatPrice(data.value)}`;
+    document.getElementById('discountLine').style.display = 'flex';
+    document.getElementById('discountAmount').textContent = '-' + formatPrice(data.discount);
+    document.getElementById('summaryTotal').textContent = formatPrice(total - data.discount);
+  } else {
+    msg.className = 'coupon-msg error';
+    msg.textContent = data.message;
+  }
+}
+</script>
+
+<%- include('../partials/footer') %>

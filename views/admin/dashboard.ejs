@@ -1,0 +1,96 @@
+<%- include('../partials/header') %>
+
+<div class="admin-layout">
+  <!-- SIDEBAR -->
+  <aside class="admin-sidebar">
+    <div class="admin-brand">
+      <i class="fas fa-cog"></i>
+      <span>Administración</span>
+    </div>
+    <nav class="admin-nav">
+      <a href="/admin" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="/admin/productos"><i class="fas fa-box"></i> Productos</a>
+      <a href="/admin/pedidos"><i class="fas fa-shopping-bag"></i> Pedidos</a>
+      <a href="/admin/categorias"><i class="fas fa-tags"></i> Categorías</a>
+      <a href="/admin/usuarios"><i class="fas fa-users"></i> Usuarios</a>
+      <div class="admin-nav-divider"></div>
+      <a href="/"><i class="fas fa-store"></i> Ver Tienda</a>
+    </nav>
+  </aside>
+
+  <div class="admin-main">
+    <div class="admin-header">
+      <h1>Dashboard</h1>
+      <span>Bienvenido, <%= user.full_name %></span>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#e63946"><i class="fas fa-shopping-bag"></i></div>
+        <div class="stat-info">
+          <h3><%= stats.totalOrders %></h3>
+          <span>Pedidos Totales</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#2a9d8f"><i class="fas fa-users"></i></div>
+        <div class="stat-info">
+          <h3><%= stats.totalUsers %></h3>
+          <span>Clientes</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#e9c46a"><i class="fas fa-dollar-sign"></i></div>
+        <div class="stat-info">
+          <h3>$<%= Number(stats.totalRevenue).toLocaleString('es-CO') %></h3>
+          <span>Ingresos</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#f4a261"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="stat-info">
+          <h3><%= stats.lowStock %></h3>
+          <span>Stock Bajo</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-grid-2">
+      <!-- RECENT ORDERS -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h3>Últimos Pedidos</h3>
+          <a href="/admin/pedidos">Ver todos</a>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>#</th><th>Total</th><th>Estado</th><th>Fecha</th></tr></thead>
+          <tbody>
+            <% recentOrders.forEach(order => { %>
+            <tr>
+              <td><a href="/admin/pedidos/<%= order.id %>"><%= order.order_number || 'N/A' %></a></td>
+              <td>$<%= Number(order.total).toLocaleString('es-CO') %></td>
+              <td><span class="badge-status status-<%= order.status %>"><%= order.status %></span></td>
+              <td><%= new Date(order.created_at).toLocaleDateString('es-CO') %></td>
+            </tr>
+            <% }) %>
+            <% if (recentOrders.length === 0) { %><tr><td colspan="4" class="text-center">No hay pedidos aún</td></tr><% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- QUICK ACTIONS -->
+      <div class="admin-card">
+        <div class="admin-card-header"><h3>Acciones Rápidas</h3></div>
+        <div class="quick-actions">
+          <a href="/admin/productos/nuevo" class="quick-action-btn"><i class="fas fa-plus"></i> Nuevo Producto</a>
+          <a href="/admin/categorias" class="quick-action-btn"><i class="fas fa-tags"></i> Gestionar Categorías</a>
+          <a href="/admin/pedidos?status=pending" class="quick-action-btn"><i class="fas fa-clock"></i> Pedidos Pendientes</a>
+          <a href="/admin/usuarios" class="quick-action-btn"><i class="fas fa-users"></i> Ver Usuarios</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

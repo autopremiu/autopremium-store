@@ -1,0 +1,92 @@
+<%- include('../partials/header') %>
+
+<div class="container" style="padding-top:2rem; padding-bottom:3rem">
+  <!-- BREADCRUMB -->
+  <div class="breadcrumb">
+    <a href="/">Inicio</a> <i class="fas fa-chevron-right"></i>
+    <span><%= filters.q ? `Resultados: "${filters.q}"` : 'Catálogo' %></span>
+  </div>
+
+  <div class="catalog-layout">
+    <!-- SIDEBAR FILTERS -->
+    <aside class="filters-sidebar">
+      <div class="filter-header">
+        <h3>Filtros</h3>
+        <a href="/productos" class="filter-clear">Limpiar</a>
+      </div>
+
+      <form action="/productos" method="GET" id="filterForm">
+        <% if (filters.q) { %><input type="hidden" name="q" value="<%= filters.q %>"><% } %>
+
+        <div class="filter-group">
+          <h4>Categorías</h4>
+          <% categories.forEach(cat => { %>
+          <label class="filter-check">
+            <input type="radio" name="categoria" value="<%= cat.slug %>" <%= filters.categoria === cat.slug ? 'checked' : '' %> onchange="this.form.submit()">
+            <span><%= cat.name %></span>
+          </label>
+          <% }) %>
+        </div>
+
+        <div class="filter-group">
+          <h4>Marcas</h4>
+          <% brands.slice(0,8).forEach(brand => { %>
+          <label class="filter-check">
+            <input type="radio" name="marca" value="<%= brand.slug %>" <%= filters.marca === brand.slug ? 'checked' : '' %> onchange="this.form.submit()">
+            <span><%= brand.name %></span>
+          </label>
+          <% }) %>
+        </div>
+
+        <div class="filter-group">
+          <h4>Precio</h4>
+          <div class="price-range">
+            <input type="number" name="min" placeholder="Mínimo" value="<%= filters.min || '' %>">
+            <span>—</span>
+            <input type="number" name="max" placeholder="Máximo" value="<%= filters.max || '' %>">
+          </div>
+          <button type="submit" class="btn btn-outline btn-sm" style="width:100%;margin-top:0.5rem">Aplicar</button>
+        </div>
+      </form>
+    </aside>
+
+    <!-- PRODUCTS AREA -->
+    <div class="catalog-main">
+      <div class="catalog-toolbar">
+        <div class="results-count"><%= total %> productos encontrados</div>
+        <select onchange="window.location.href='/productos?'+new URLSearchParams({...Object.fromEntries(new URLSearchParams(location.search)),...{orden:this.value}})" class="sort-select">
+          <option value="">Más recientes</option>
+          <option value="precio-asc" <%= filters.orden === 'precio-asc' ? 'selected' : '' %>>Precio: Menor a Mayor</option>
+          <option value="precio-desc" <%= filters.orden === 'precio-desc' ? 'selected' : '' %>>Precio: Mayor a Menor</option>
+          <option value="nombre" <%= filters.orden === 'nombre' ? 'selected' : '' %>>Nombre A-Z</option>
+        </select>
+      </div>
+
+      <% if (products.length > 0) { %>
+      <div class="products-grid">
+        <%- include('../partials/product-cards', { products }) %>
+      </div>
+      <% } else { %>
+      <div class="empty-state">
+        <i class="fas fa-search"></i>
+        <h3>No encontramos productos</h3>
+        <p>Intenta con otros filtros o términos de búsqueda</p>
+        <a href="/productos" class="btn btn-primary">Ver todo el catálogo</a>
+      </div>
+      <% } %>
+
+      <!-- PAGINATION -->
+      <% if (totalPages > 1) { %>
+      <div class="pagination">
+        <% if (page > 1) { %><a href="?page=<%= page-1 %>" class="page-btn"><i class="fas fa-chevron-left"></i></a><% } %>
+        <% for(let i=1; i<=totalPages; i++) { %>
+          <a href="?page=<%= i %>" class="page-btn <%= i === page ? 'active' : '' %>"><%= i %></a>
+        <% } %>
+        <% if (page < totalPages) { %><a href="?page=<%= page+1 %>" class="page-btn"><i class="fas fa-chevron-right"></i></a><% } %>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

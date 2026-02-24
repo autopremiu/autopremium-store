@@ -1,0 +1,24 @@
+<%- include('../partials/header') %>
+
+<div class="container" style="padding-top:3rem;padding-bottom:3rem;max-width:700px;margin:auto">
+  <div class="confirmation-card">
+    <div class="confirm-icon"><i class="fas fa-check-circle"></i></div>
+    <h1>¡Pedido Confirmado!</h1>
+    <p>Gracias por tu compra. Tu pedido ha sido recibido y está siendo procesado.</p>
+    <div class="order-number-badge">Pedido # <%= order.order_number %></div>
+
+    <div class="order-detail-summary">
+      <div class="detail-row"><span>Estado</span><span class="badge-status status-<%= order.status %>"><%= order.status %></span></div>
+      <div class="detail-row"><span>Pago</span><span class="badge-status pay-<%= order.payment_status %>"><%= order.payment_status %></span></div>
+      <div class="detail-row"><span>Fecha</span><span><%= new Date(order.created_at).toLocaleDateString('es-CO') %></span></div>
+      <div class="detail-row"><span>Total</span><span class="price-confirm">$<%= Number(order.total).toLocaleString('es-CO') %></span></div>
+    </div>
+
+    <div class="confirm-actions">
+      <a href="/account/pedidos/<%= order.order_number %>" class="btn btn-outline">Ver Detalles</a>
+      <a href="/productos" class="btn btn-primary">Seguir Comprando</a>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,41 @@
+<%- include('../partials/header') %>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-brand"><i class="fas fa-cog"></i><span>Administración</span></div>
+    <nav class="admin-nav">
+      <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="/admin/productos"><i class="fas fa-box"></i> Productos</a>
+      <a href="/admin/pedidos"><i class="fas fa-shopping-bag"></i> Pedidos</a>
+      <a href="/admin/categorias" class="active"><i class="fas fa-tags"></i> Categorías</a>
+      <a href="/admin/usuarios"><i class="fas fa-users"></i> Usuarios</a>
+      <div class="admin-nav-divider"></div>
+      <a href="/"><i class="fas fa-store"></i> Ver Tienda</a>
+    </nav>
+  </aside>
+  <div class="admin-main">
+    <div class="admin-header"><h1>Categorías</h1></div>
+    <div class="admin-grid-2">
+      <div class="admin-card">
+        <h3>Nueva Categoría</h3>
+        <form action="/admin/categorias" method="POST">
+          <div class="form-group"><label>Nombre</label><input type="text" name="name" required></div>
+          <div class="form-group"><label>Descripción</label><input type="text" name="description"></div>
+          <div class="form-group"><label>Ícono (emoji)</label><input type="text" name="icon" placeholder="⚙️" maxlength="4"></div>
+          <button type="submit" class="btn btn-primary">Crear Categoría</button>
+        </form>
+      </div>
+      <div class="admin-card">
+        <h3>Categorías Existentes</h3>
+        <table class="admin-table">
+          <thead><tr><th>Ícono</th><th>Nombre</th><th>Slug</th></tr></thead>
+          <tbody>
+            <% categories.forEach(c => { %>
+            <tr><td><%= c.icon %></td><td><%= c.name %></td><td><code><%= c.slug %></code></td></tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

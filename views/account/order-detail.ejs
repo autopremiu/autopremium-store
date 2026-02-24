@@ -1,0 +1,42 @@
+<%- include('../partials/header') %>
+<div class="container" style="padding-top:2rem;padding-bottom:3rem">
+  <div class="account-layout">
+    <aside class="account-sidebar">
+      <div class="account-user"><div class="avatar-circle"><%= user.full_name.charAt(0) %></div><div><strong><%= user.full_name %></strong></div></div>
+      <nav class="account-nav">
+        <a href="/account"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="/account/pedidos" class="active"><i class="fas fa-box"></i> Mis Pedidos</a>
+        <a href="/account/perfil"><i class="fas fa-user"></i> Mi Perfil</a>
+        <a href="/account/direcciones"><i class="fas fa-map-marker-alt"></i> Direcciones</a>
+      </nav>
+    </aside>
+    <div class="account-main">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2>Pedido <%= order.order_number %></h2>
+        <span class="badge-status status-<%= order.status %>"><%= order.status %></span>
+      </div>
+      <div class="order-meta">
+        <span><i class="fas fa-calendar"></i> <%= new Date(order.created_at).toLocaleDateString('es-CO') %></span>
+        <span><i class="fas fa-credit-card"></i> Pago: <span class="badge-status pay-<%= order.payment_status %>"><%= order.payment_status %></span></span>
+        <% if (order.tracking_number) { %><span><i class="fas fa-truck"></i> Tracking: <strong><%= order.tracking_number %></strong></span><% } %>
+      </div>
+      <table class="admin-table" style="margin-top:1.5rem">
+        <thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead>
+        <tbody>
+          <% order.order_items.forEach(item => { %>
+          <tr>
+            <td><%= item.product_name %></td>
+            <td><%= item.quantity %></td>
+            <td>$<%= Number(item.unit_price).toLocaleString('es-CO') %></td>
+            <td>$<%= Number(item.total_price).toLocaleString('es-CO') %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+        <tfoot>
+          <tr><td colspan="3"><strong>Total</strong></td><td><strong>$<%= Number(order.total).toLocaleString('es-CO') %></strong></td></tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

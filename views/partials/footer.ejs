@@ -1,0 +1,71 @@
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo-text">
+          <span class="logo-auto">AUTO</span>
+          <span class="logo-premium">PREMIUM</span>
+          <span class="logo-service">service</span>
+        </div>
+        <p>Descubre la nueva era del servicio automotriz. Repuestos originales y de calidad para todos los vehículos.</p>
+        <div class="social-links">
+          <a href="#"><i class="fab fa-facebook"></i></a>
+          <a href="#"><i class="fab fa-instagram"></i></a>
+          <a href="#"><i class="fab fa-whatsapp"></i></a>
+          <a href="#"><i class="fab fa-youtube"></i></a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Categorías</h4>
+        <ul>
+          <li><a href="/productos?categoria=motor-transmision">Motor y Transmisión</a></li>
+          <li><a href="/productos?categoria=frenos-suspension">Frenos y Suspensión</a></li>
+          <li><a href="/productos?categoria=electrico-electronico">Eléctrico</a></li>
+          <li><a href="/productos?categoria=filtros-lubricantes">Filtros y Aceites</a></li>
+          <li><a href="/productos?categoria=carroceria-exterior">Carrocería</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Mi Cuenta</h4>
+        <ul>
+          <li><a href="/auth/login">Iniciar Sesión</a></li>
+          <li><a href="/auth/registro">Crear Cuenta</a></li>
+          <li><a href="/account/pedidos">Mis Pedidos</a></li>
+          <li><a href="/account/direcciones">Mis Direcciones</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Ayuda</h4>
+        <ul>
+          <li><a href="#">Cómo Comprar</a></li>
+          <li><a href="#">Envíos y Devoluciones</a></li>
+          <li><a href="#">Garantías</a></li>
+          <li><a href="#">Contáctanos</a></li>
+          <li><a href="#">Preguntas Frecuentes</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; <%= new Date().getFullYear() %> Auto Premium Service. Todos los derechos reservados.</p>
+      <div class="payment-icons">
+        <i class="fab fa-cc-visa"></i>
+        <i class="fab fa-cc-mastercard"></i>
+        <i class="fab fa-cc-amex"></i>
+        <i class="fab fa-stripe"></i>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- CART NOTIFICATION -->
+<div class="cart-notification" id="cartNotification">
+  <i class="fas fa-check-circle"></i>
+  <span id="cartNotificationMsg">Producto agregado</span>
+</div>
+
+<script src="/js/main.js"></script>
+</body>
+</html>

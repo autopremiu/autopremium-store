@@ -1,0 +1,26 @@
+<%- include('../partials/header') %>
+<div class="container" style="padding-top:2rem;padding-bottom:3rem">
+  <div class="account-layout">
+    <aside class="account-sidebar">
+      <div class="account-user"><div class="avatar-circle"><%= user.full_name.charAt(0) %></div><div><strong><%= user.full_name %></strong></div></div>
+      <nav class="account-nav">
+        <a href="/account"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="/account/pedidos"><i class="fas fa-box"></i> Mis Pedidos</a>
+        <a href="/account/perfil" class="active"><i class="fas fa-user"></i> Mi Perfil</a>
+        <a href="/account/direcciones"><i class="fas fa-map-marker-alt"></i> Direcciones</a>
+      </nav>
+    </aside>
+    <div class="account-main">
+      <h2>Mi Perfil</h2>
+      <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+      <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+      <form action="/account/perfil" method="POST" class="admin-card" style="padding:1.5rem;max-width:500px">
+        <div class="form-group"><label>Nombre completo</label><input type="text" name="full_name" value="<%= user.full_name %>" required></div>
+        <div class="form-group"><label>Email (no editable)</label><input type="email" value="<%= user.email %>" disabled></div>
+        <div class="form-group"><label>Teléfono</label><input type="text" name="phone" value=""></div>
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+      </form>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>
