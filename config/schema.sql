@@ -258,3 +258,17 @@ INSERT INTO brands (name, slug) VALUES
   ('Valeo', 'valeo'),
   ('Continental', 'continental')
 ON CONFLICT (slug) DO NOTHING;
+
+-- ============================================
+-- BANNERS TABLE (add this if not exists)
+-- ============================================
+CREATE TABLE IF NOT EXISTS banners (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  title VARCHAR(255),
+  subtitle VARCHAR(255),
+  image_url TEXT,
+  link VARCHAR(255),
+  is_active BOOLEAN DEFAULT true,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);

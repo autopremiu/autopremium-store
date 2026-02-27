@@ -682,3 +682,31 @@ h3 { font-size: 1.4rem; font-weight: 700; }
 /* Text helpers */
 .text-center { text-align: center; }
 .text-danger { color: var(--red) !important; }
+
+/* ============================================
+   BANNER SLIDER
+   ============================================ */
+.banner-slider { position: relative; height: 400px; overflow: hidden; }
+.banner-slide { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 0.6s ease; display: flex; align-items: center; }
+.banner-slide.active { opacity: 1; }
+.banner-overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 100%); }
+.banner-content { position: relative; z-index: 1; padding: 0 4rem; }
+.banner-content h2 { font-size: 3rem; font-weight: 800; color: white; margin-bottom: 0.5rem; }
+.banner-content p { font-size: 1.2rem; color: rgba(255,255,255,0.85); margin-bottom: 1.5rem; }
+.slider-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 1rem; z-index: 10; transition: all 0.2s; }
+.slider-btn:hover { background: var(--red); }
+.slider-prev { left: 1rem; }
+.slider-next { right: 1rem; }
+.slider-dots { position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.5rem; z-index: 10; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.2s; }
+.dot.active { background: var(--red); width: 24px; border-radius: 4px; }
+
+/* ============================================
+   WHATSAPP FLOATING BUTTON
+   ============================================ */
+.whatsapp-float { position: fixed; bottom: 2rem; left: 2rem; z-index: 9998; }
+.whatsapp-float a { display: flex; align-items: center; gap: 0.6rem; background: #25d366; color: white; padding: 0.85rem 1.2rem; border-radius: 50px; font-weight: 700; font-size: 0.95rem; box-shadow: 0 4px 20px rgba(37,211,102,0.4); transition: all 0.3s; text-decoration: none; }
+.whatsapp-float a:hover { background: #1ebe57; transform: scale(1.05); box-shadow: 0 6px 25px rgba(37,211,102,0.5); }
+.whatsapp-float .fab { font-size: 1.4rem; }
+.whatsapp-text { display: block; }
+@media (max-width: 480px) { .whatsapp-text { display: none; } .whatsapp-float a { padding: 0.9rem; border-radius: 50%; } }

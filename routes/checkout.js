@@ -3,98 +3,60 @@ const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { supabaseAdmin } = require('../config/supabase');
 const { requireAuth } = require('../middleware/auth');
+const { sendOrderNotificationAdmin, sendOrderConfirmationClient } = require('../config/email');
 
 // GET Checkout
 router.get('/', requireAuth, async (req, res) => {
   const cart = req.session.cart;
   if (!cart || cart.items.length === 0) return res.redirect('/cart');
-
   const { data: addresses } = await supabaseAdmin.from('addresses').select('*').eq('user_id', req.session.user.id);
-
-  res.render('shop/checkout', {
-    title: 'Finalizar Compra',
-    cart,
-    addresses: addresses || [],
-    stripePK: process.env.STRIPE_PUBLISHABLE_KEY
-  });
+  res.render('shop/checkout', { title: 'Finalizar Compra', cart, addresses: addresses || [], stripePK: process.env.STRIPE_PUBLISHABLE_KEY });
 });
 
-// POST Create Payment Intent
 router.post('/crear-pago', requireAuth, async (req, res) => {
   const cart = req.session.cart;
   if (!cart || cart.items.length === 0) return res.json({ error: 'Carrito vacío' });
-
   try {
-    const amount = Math.round(cart.total * 100); // Stripe expects cents
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency: 'cop',
-      metadata: { user_id: req.session.user.id }
-    });
-
+    const paymentIntent = await stripe.paymentIntents.create({ amount: Math.round(cart.total * 100), currency: 'cop', metadata: { user_id: req.session.user.id } });
     res.json({ clientSecret: paymentIntent.client_secret });
   } catch (err) {
-    console.error('Stripe error:', err);
     res.json({ error: 'Error al crear el pago' });
   }
 });
 
-// POST Place Order
 router.post('/confirmar', requireAuth, async (req, res) => {
   const { shipping_address, payment_intent_id, notes } = req.body;
   const cart = req.session.cart;
-  
   if (!cart || cart.items.length === 0) return res.json({ success: false, message: 'Carrito vacío' });
-
   try {
-    // Verify payment with Stripe
     let paymentStatus = 'pending';
     if (payment_intent_id) {
       const pi = await stripe.paymentIntents.retrieve(payment_intent_id);
       paymentStatus = pi.status === 'succeeded' ? 'paid' : 'pending';
     }
-
-    // Create order
+    const shippingAddr = JSON.parse(shipping_address);
     const { data: order, error } = await supabaseAdmin.from('orders').insert({
       user_id: req.session.user.id,
       status: paymentStatus === 'paid' ? 'confirmed' : 'pending',
       payment_status: paymentStatus,
       payment_method: 'stripe',
       stripe_payment_intent_id: payment_intent_id,
-      subtotal: cart.subtotal,
-      shipping_cost: 0,
-      tax: 0,
-      discount: 0,
-      total: cart.total,
-      shipping_address: JSON.parse(shipping_address),
-      notes
+      subtotal: cart.subtotal, shipping_cost: 0, tax: 0, discount: 0, total: cart.total,
+      shipping_address: shippingAddr, notes
     }).select().single();
-
     if (error) throw error;
-
-    // Create order items
-    const orderItems = cart.items.map(item => ({
-      order_id: order.id,
-      product_id: item.id,
-      product_name: item.name,
-      product_sku: item.sku,
-      product_image: item.thumbnail,
-      quantity: item.quantity,
-      unit_price: item.price,
-      total_price: item.price * item.quantity
-    }));
-
-    await supabaseAdmin.from('order_items').insert(orderItems);
-
-    // Update stock
-    for (const item of cart.items) {
-      await supabaseAdmin.rpc('decrement_stock', { product_id: item.id, amount: item.quantity }).catch(() => {});
+    await supabaseAdmin.from('order_items').insert(cart.items.map(item => ({
+      order_id: order.id, product_id: item.id, product_name: item.name,
+      product_sku: item.sku, product_image: item.thumbnail,
+      quantity: item.quantity, unit_price: item.price, total_price: item.price * item.quantity
+    })));
+    const { data: fullOrder } = await supabaseAdmin.from('orders').select('*, order_items(*)').eq('id', order.id).single();
+    const { data: userData } = await supabaseAdmin.from('users').select('email').eq('id', req.session.user.id).single();
+    if (fullOrder) {
+      sendOrderNotificationAdmin(fullOrder).catch(() => {});
+      if (userData?.email) sendOrderConfirmationClient(fullOrder, userData.email).catch(() => {});
     }
-
-    // Clear cart
     req.session.cart = { items: [], count: 0, subtotal: 0, total: 0 };
-
     res.json({ success: true, order_number: order.order_number, order_id: order.id });
   } catch (err) {
     console.error('Order error:', err);
@@ -102,38 +64,20 @@ router.post('/confirmar', requireAuth, async (req, res) => {
   }
 });
 
-// Order confirmation page
 router.get('/confirmacion/:order_number', requireAuth, async (req, res) => {
-  const { data: order } = await supabaseAdmin
-    .from('orders')
-    .select('*, order_items(*)')
-    .eq('order_number', req.params.order_number)
-    .eq('user_id', req.session.user.id)
-    .single();
-
+  const { data: order } = await supabaseAdmin.from('orders').select('*, order_items(*)').eq('order_number', req.params.order_number).eq('user_id', req.session.user.id).single();
   if (!order) return res.redirect('/');
-
   res.render('shop/order-confirmation', { title: 'Pedido Confirmado', order });
 });
 
-// Stripe Webhook
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
+  try { event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET); }
+  catch (err) { return res.status(400).send(`Webhook Error: ${err.message}`); }
   if (event.type === 'payment_intent.succeeded') {
-    const pi = event.data.object;
-    await supabaseAdmin.from('orders')
-      .update({ payment_status: 'paid', status: 'confirmed' })
-      .eq('stripe_payment_intent_id', pi.id);
+    await supabaseAdmin.from('orders').update({ payment_status: 'paid', status: 'confirmed' }).eq('stripe_payment_intent_id', event.data.object.id);
   }
-
   res.json({ received: true });
 });
 

@@ -1,5 +1,4 @@
 <%- include('../partials/header') %>
-
 <div class="admin-layout">
   <aside class="admin-sidebar">
     <div class="admin-brand"><i class="fas fa-cog"></i><span>Administración</span></div>
@@ -7,101 +6,130 @@
       <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
       <a href="/admin/productos" class="active"><i class="fas fa-box"></i> Productos</a>
       <a href="/admin/pedidos"><i class="fas fa-shopping-bag"></i> Pedidos</a>
+      <a href="/admin/banners"><i class="fas fa-images"></i> Banners</a>
       <a href="/admin/categorias"><i class="fas fa-tags"></i> Categorías</a>
       <a href="/admin/usuarios"><i class="fas fa-users"></i> Usuarios</a>
+      <a href="/admin/reportes"><i class="fas fa-chart-bar"></i> Reportes</a>
       <div class="admin-nav-divider"></div>
       <a href="/"><i class="fas fa-store"></i> Ver Tienda</a>
     </nav>
   </aside>
-
   <div class="admin-main">
     <div class="admin-header">
       <h1><%= product ? 'Editar Producto' : 'Nuevo Producto' %></h1>
       <a href="/admin/productos" class="btn btn-outline">← Volver</a>
     </div>
-
     <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
-
-    <form action="/admin/productos/<%= product ? product.id + '/editar' : 'nuevo' %>" method="POST" class="admin-card" style="padding:2rem">
+    <form action="/admin/productos/<%= product ? product.id + '/editar' : 'nuevo' %>" method="POST" enctype="multipart/form-data" class="admin-card" style="padding:2rem">
       <div class="form-row">
         <div class="form-group" style="flex:2">
           <label>Nombre del Producto *</label>
-          <input type="text" name="name" value="<%= product?.name || '' %>" required placeholder="Ej: Pastilla de freno Bosch">
+          <input type="text" name="name" value="<%= product?.name || '' %>" required>
         </div>
         <div class="form-group">
           <label>SKU</label>
-          <input type="text" name="sku" value="<%= product?.sku || '' %>" placeholder="BOX-001">
+          <input type="text" name="sku" value="<%= product?.sku || '' %>">
         </div>
       </div>
-
       <div class="form-group">
         <label>Descripción Corta</label>
-        <input type="text" name="short_description" value="<%= product?.short_description || '' %>" placeholder="Descripción breve para listados">
+        <input type="text" name="short_description" value="<%= product?.short_description || '' %>">
       </div>
-
       <div class="form-group">
         <label>Descripción Completa</label>
-        <textarea name="description" rows="6" placeholder="Descripción detallada del producto..."><%= product?.description || '' %></textarea>
+        <textarea name="description" rows="5"><%= product?.description || '' %></textarea>
       </div>
-
       <div class="form-row">
         <div class="form-group">
           <label>Precio *</label>
-          <input type="number" name="price" value="<%= product?.price || '' %>" required step="0.01" placeholder="45000">
+          <input type="number" name="price" value="<%= product?.price || '' %>" required step="0.01">
         </div>
         <div class="form-group">
-          <label>Precio Tachado (opcional)</label>
-          <input type="number" name="compare_price" value="<%= product?.compare_price || '' %>" step="0.01" placeholder="60000">
+          <label>Precio Tachado</label>
+          <input type="number" name="compare_price" value="<%= product?.compare_price || '' %>" step="0.01">
         </div>
         <div class="form-group">
           <label>Stock *</label>
           <input type="number" name="stock" value="<%= product?.stock || 0 %>" required min="0">
         </div>
       </div>
-
       <div class="form-row">
         <div class="form-group">
           <label>Categoría</label>
           <select name="category_id">
             <option value="">Sin categoría</option>
-            <% categories.forEach(cat => { %>
-            <option value="<%= cat.id %>" <%= product?.category_id === cat.id ? 'selected' : '' %>><%= cat.name %></option>
-            <% }) %>
+            <% categories.forEach(cat => { %><option value="<%= cat.id %>" <%= product?.category_id === cat.id ? 'selected' : '' %>><%= cat.name %></option><% }) %>
           </select>
         </div>
         <div class="form-group">
           <label>Marca</label>
           <select name="brand_id">
             <option value="">Sin marca</option>
-            <% brands.forEach(brand => { %>
-            <option value="<%= brand.id %>" <%= product?.brand_id === brand.id ? 'selected' : '' %>><%= brand.name %></option>
-            <% }) %>
+            <% brands.forEach(brand => { %><option value="<%= brand.id %>" <%= product?.brand_id === brand.id ? 'selected' : '' %>><%= brand.name %></option><% }) %>
           </select>
         </div>
       </div>
 
+      <!-- IMAGE UPLOAD -->
       <div class="form-group">
-        <label>URL de Imagen Principal</label>
-        <input type="url" name="thumbnail" value="<%= product?.thumbnail || '' %>" placeholder="https://...">
+        <label>📸 Imágenes del Producto</label>
+        <div class="image-upload-area" id="imageUploadArea">
+          <input type="file" name="product_images" multiple accept="image/*" id="imageInput" style="display:none">
+          <div class="upload-placeholder" onclick="document.getElementById('imageInput').click()">
+            <i class="fas fa-cloud-upload-alt" style="font-size:2rem;color:var(--text-muted);display:block;margin-bottom:0.5rem"></i>
+            <p>Haz clic para subir imágenes</p>
+            <span style="font-size:0.8rem;color:var(--text-muted)">JPG, PNG, WEBP - máx 5MB cada una</span>
+          </div>
+          <div id="imagePreview" class="image-preview-grid"></div>
+        </div>
+        <% if (product?.thumbnail) { %>
+        <div style="margin-top:0.75rem">
+          <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem">Imagen actual:</p>
+          <img src="<%= product.thumbnail %>" style="width:100px;height:100px;object-fit:cover;border-radius:6px;border:1px solid var(--border)">
+        </div>
+        <% } %>
+        <div class="form-group" style="margin-top:0.75rem">
+          <label style="font-size:0.8rem">O pega una URL de imagen:</label>
+          <input type="url" name="thumbnail_url" value="<%= product?.thumbnail || '' %>" placeholder="https://...">
+        </div>
       </div>
 
       <div class="form-row" style="align-items:center;gap:2rem;margin-top:0.5rem">
-        <label class="toggle-check">
-          <input type="checkbox" name="is_active" <%= !product || product.is_active ? 'checked' : '' %>>
-          <span>Producto activo</span>
-        </label>
-        <label class="toggle-check">
-          <input type="checkbox" name="is_featured" <%= product?.is_featured ? 'checked' : '' %>>
-          <span>Producto destacado</span>
-        </label>
+        <label class="toggle-check"><input type="checkbox" name="is_active" <%= !product || product.is_active ? 'checked' : '' %>><span>Producto activo</span></label>
+        <label class="toggle-check"><input type="checkbox" name="is_featured" <%= product?.is_featured ? 'checked' : '' %>><span>Producto destacado</span></label>
       </div>
 
       <div style="margin-top:2rem;display:flex;gap:1rem">
-        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save"></i> Guardar Producto</button>
+        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save"></i> Guardar</button>
         <a href="/admin/productos" class="btn btn-outline btn-lg">Cancelar</a>
       </div>
     </form>
   </div>
 </div>
+
+<style>
+.image-upload-area { border: 2px dashed var(--border); border-radius: var(--radius); padding: 1.5rem; transition: all 0.2s; }
+.image-upload-area:hover { border-color: var(--red); }
+.upload-placeholder { text-align: center; cursor: pointer; padding: 1rem; }
+.upload-placeholder p { margin: 0; font-weight: 600; }
+.image-preview-grid { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+.image-preview-grid img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); }
+</style>
+
+<script>
+document.getElementById('imageInput').addEventListener('change', function() {
+  const preview = document.getElementById('imagePreview');
+  preview.innerHTML = '';
+  Array.from(this.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+});
+</script>
 
 <%- include('../partials/footer') %>

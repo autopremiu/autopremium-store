@@ -5,21 +5,23 @@ const { supabaseAdmin } = require('../config/supabase');
 // Home page
 router.get('/', async (req, res) => {
   try {
-    const [featuredRes, categoriesRes, brandsRes] = await Promise.all([
+    const [featuredRes, categoriesRes, brandsRes, bannersRes] = await Promise.all([
       supabaseAdmin.from('products').select('*, categories(name, slug), brands(name)').eq('is_active', true).eq('is_featured', true).limit(8),
       supabaseAdmin.from('categories').select('*').eq('is_active', true).order('sort_order'),
-      supabaseAdmin.from('brands').select('*').eq('is_active', true).limit(10)
+      supabaseAdmin.from('brands').select('*').eq('is_active', true).limit(10),
+      supabaseAdmin.from('banners').select('*').eq('is_active', true).order('sort_order').limit(5)
     ]);
 
     res.render('shop/home', {
       title: 'Auto Premium Service - Repuestos Automotrices',
       featured: featuredRes.data || [],
       categories: categoriesRes.data || [],
-      brands: brandsRes.data || []
+      brands: brandsRes.data || [],
+      banners: bannersRes.data || []
     });
   } catch (err) {
     console.error(err);
-    res.render('shop/home', { title: 'Auto Premium Service', featured: [], categories: [], brands: [] });
+    res.render('shop/home', { title: 'Auto Premium Service', featured: [], categories: [], brands: [], banners: [] });
   }
 });
 
@@ -59,6 +61,7 @@ router.get('/productos', async (req, res) => {
       products: products || [],
       categories: categoriesRes.data || [],
       brands: brandsRes.data || [],
+      banners: bannersRes.data || [],
       total: count || 0,
       page: parseInt(page),
       totalPages: Math.ceil((count || 0) / limit),

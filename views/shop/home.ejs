@@ -1,5 +1,28 @@
 <%- include('../partials/header') %>
 
+<!-- BANNER SLIDER -->
+<% if (banners && banners.length > 0) { %>
+<section class="banner-slider" id="bannerSlider">
+  <% banners.forEach((banner, i) => { %>
+  <div class="banner-slide <%= i === 0 ? 'active' : '' %>" style="<%= banner.image_url ? `background-image:url('${banner.image_url}')` : 'background:#1a1a1a' %>">
+    <div class="banner-overlay"></div>
+    <div class="banner-content">
+      <% if (banner.title) { %><h2><%= banner.title %></h2><% } %>
+      <% if (banner.subtitle) { %><p><%= banner.subtitle %></p><% } %>
+      <% if (banner.link) { %><a href="<%= banner.link %>" class="btn btn-primary btn-lg">Ver Oferta</a><% } %>
+    </div>
+  </div>
+  <% }) %>
+  <% if (banners.length > 1) { %>
+  <button class="slider-btn slider-prev" onclick="slideBanner(-1)"><i class="fas fa-chevron-left"></i></button>
+  <button class="slider-btn slider-next" onclick="slideBanner(1)"><i class="fas fa-chevron-right"></i></button>
+  <div class="slider-dots">
+    <% banners.forEach((b, i) => { %><span class="dot <%= i===0?'active':'' %>" onclick="goSlide(<%= i %>)"></span><% }) %>
+  </div>
+  <% } %>
+</section>
+<% } %>
+
 <!-- HERO -->
 <section class="hero">
   <div class="hero-content">
@@ -30,22 +53,10 @@
 <!-- FEATURES BAR -->
 <section class="features-bar">
   <div class="container features-grid">
-    <div class="feature-item">
-      <i class="fas fa-shipping-fast"></i>
-      <div><strong>Envío Gratis</strong><p>En pedidos +$150.000</p></div>
-    </div>
-    <div class="feature-item">
-      <i class="fas fa-shield-alt"></i>
-      <div><strong>Garantía</strong><p>En todos los productos</p></div>
-    </div>
-    <div class="feature-item">
-      <i class="fas fa-undo"></i>
-      <div><strong>Devoluciones</strong><p>30 días sin preguntas</p></div>
-    </div>
-    <div class="feature-item">
-      <i class="fas fa-headset"></i>
-      <div><strong>Soporte 24/7</strong><p>Asesoría técnica</p></div>
-    </div>
+    <div class="feature-item"><i class="fas fa-shipping-fast"></i><div><strong>Envío Gratis</strong><p>En pedidos +$150.000</p></div></div>
+    <div class="feature-item"><i class="fas fa-shield-alt"></i><div><strong>Garantía</strong><p>En todos los productos</p></div></div>
+    <div class="feature-item"><i class="fas fa-undo"></i><div><strong>Devoluciones</strong><p>30 días sin preguntas</p></div></div>
+    <div class="feature-item"><i class="fas fa-headset"></i><div><strong>Soporte 24/7</strong><p>Asesoría técnica</p></div></div>
   </div>
 </section>
 
@@ -57,20 +68,12 @@
       <a href="/productos" class="link-all">Ver todo <i class="fas fa-arrow-right"></i></a>
     </div>
     <div class="categories-grid">
-      <% categories.forEach(cat => { %>
+      <% (categories.length > 0 ? categories : [{name:'Motor y Transmisión',slug:'motor-transmision',icon:'⚙️'},{name:'Frenos y Suspensión',slug:'frenos-suspension',icon:'🔧'},{name:'Eléctrico',slug:'electrico-electronico',icon:'⚡'},{name:'Carrocería',slug:'carroceria-exterior',icon:'🚗'},{name:'Filtros',slug:'filtros-lubricantes',icon:'🛢️'},{name:'Iluminación',slug:'iluminacion',icon:'💡'},{name:'Escape',slug:'escape-admision',icon:'💨'},{name:'Interior',slug:'interior-climatizacion',icon:'❄️'}]).forEach(cat => { %>
       <a href="/productos?categoria=<%= cat.slug %>" class="category-card">
         <div class="cat-icon"><%= cat.icon || '🔧' %></div>
         <div class="cat-name"><%= cat.name %></div>
       </a>
       <% }) %>
-      <% if (categories.length === 0) { %>
-        <% ['Motor y Transmisión','Frenos y Suspensión','Eléctrico','Carrocería','Filtros','Iluminación','Escape','Interior'].forEach((c,i) => { %>
-        <a href="/productos" class="category-card">
-          <div class="cat-icon"><%= ['⚙️','🔧','⚡','🚗','🛢️','💡','💨','❄️'][i] %></div>
-          <div class="cat-name"><%= c %></div>
-        </a>
-        <% }) %>
-      <% } %>
     </div>
   </div>
 </section>
@@ -80,17 +83,15 @@
   <div class="container">
     <div class="section-header">
       <h2>Productos Destacados</h2>
-      <a href="/productos?featured=true" class="link-all">Ver más <i class="fas fa-arrow-right"></i></a>
+      <a href="/productos" class="link-all">Ver más <i class="fas fa-arrow-right"></i></a>
     </div>
     <% if (featured.length > 0) { %>
-    <div class="products-grid">
-      <%- include('../partials/product-cards', { products: featured }) %>
-    </div>
+    <div class="products-grid"><%- include('../partials/product-cards', { products: featured }) %></div>
     <% } else { %>
     <div class="empty-state">
       <i class="fas fa-box-open"></i>
       <p>Próximamente más productos disponibles</p>
-      <a href="/admin/productos/nuevo" class="btn btn-primary">Agregar Productos</a>
+      <% if (user && user.role === 'admin') { %><a href="/admin/productos/nuevo" class="btn btn-primary">Agregar Productos</a><% } %>
     </div>
     <% } %>
   </div>
@@ -100,11 +101,9 @@
 <% if (brands.length > 0) { %>
 <section class="section brands-section">
   <div class="container">
-    <h2 class="text-center">Marcas que Manejamos</h2>
+    <h2 class="text-center" style="font-size:1rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--text-muted);margin-bottom:2rem">Marcas que Manejamos</h2>
     <div class="brands-slider">
-      <% brands.forEach(brand => { %>
-      <div class="brand-item"><%= brand.name %></div>
-      <% }) %>
+      <% brands.forEach(brand => { %><div class="brand-item"><%= brand.name %></div><% }) %>
     </div>
   </div>
 </section>
@@ -116,11 +115,31 @@
     <div class="cta-content">
       <h2>¿Necesitas asesoría técnica?</h2>
       <p>Nuestros expertos te ayudan a encontrar el repuesto correcto para tu vehículo</p>
-      <a href="https://wa.me/573000000000" class="btn btn-whatsapp btn-lg" target="_blank">
+      <a href="https://wa.me/57<%= process.env.WHATSAPP_NUMBER || '3000000000' %>" class="btn btn-whatsapp btn-lg" target="_blank">
         <i class="fab fa-whatsapp"></i> Chatear por WhatsApp
       </a>
     </div>
   </div>
 </section>
+
+<script>
+let currentSlide = 0;
+const slides = document.querySelectorAll('.banner-slide');
+const dots = document.querySelectorAll('.dot');
+
+function goSlide(n) {
+  if (!slides.length) return;
+  slides[currentSlide].classList.remove('active');
+  dots[currentSlide]?.classList.remove('active');
+  currentSlide = (n + slides.length) % slides.length;
+  slides[currentSlide].classList.add('active');
+  dots[currentSlide]?.classList.add('active');
+}
+
+function slideBanner(dir) { goSlide(currentSlide + dir); }
+
+// Auto-slide every 5s
+if (slides.length > 1) setInterval(() => slideBanner(1), 5000);
+</script>
 
 <%- include('../partials/footer') %>

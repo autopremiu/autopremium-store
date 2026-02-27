@@ -1,0 +1,125 @@
+<%- include('../partials/header') %>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-brand"><i class="fas fa-cog"></i><span>Administración</span></div>
+    <nav class="admin-nav">
+      <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="/admin/productos"><i class="fas fa-box"></i> Productos</a>
+      <a href="/admin/pedidos"><i class="fas fa-shopping-bag"></i> Pedidos</a>
+      <a href="/admin/banners"><i class="fas fa-images"></i> Banners</a>
+      <a href="/admin/categorias"><i class="fas fa-tags"></i> Categorías</a>
+      <a href="/admin/usuarios"><i class="fas fa-users"></i> Usuarios</a>
+      <a href="/admin/reportes" class="active"><i class="fas fa-chart-bar"></i> Reportes</a>
+      <div class="admin-nav-divider"></div>
+      <a href="/"><i class="fas fa-store"></i> Ver Tienda</a>
+    </nav>
+  </aside>
+  <div class="admin-main">
+    <div class="admin-header"><h1>Reportes de Ventas</h1></div>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#e63946"><i class="fas fa-calendar-alt"></i></div>
+        <div class="stat-info"><h3>$<%= Number(monthRevenue).toLocaleString('es-CO') %></h3><span>Ingresos este mes</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#2a9d8f"><i class="fas fa-shopping-bag"></i></div>
+        <div class="stat-info"><h3><%= monthOrders %></h3><span>Pedidos este mes</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#e9c46a"><i class="fas fa-chart-line"></i></div>
+        <div class="stat-info"><h3>$<%= Number(yearRevenue).toLocaleString('es-CO') %></h3><span>Ingresos este año</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#f4a261"><i class="fas fa-receipt"></i></div>
+        <div class="stat-info"><h3>$<%= monthOrders > 0 ? Number(monthRevenue / monthOrders).toLocaleString('es-CO') : 0 %></h3><span>Ticket promedio</span></div>
+      </div>
+    </div>
+
+    <div class="admin-grid-2" style="margin-top:1.5rem">
+      <!-- MONTHLY CHART -->
+      <div class="admin-card" style="padding:1.5rem">
+        <h3 style="margin-bottom:1.5rem">Ingresos por Mes</h3>
+        <canvas id="monthlyChart" height="200"></canvas>
+      </div>
+
+      <!-- STATUS CHART -->
+      <div class="admin-card" style="padding:1.5rem">
+        <h3 style="margin-bottom:1.5rem">Estado de Pedidos</h3>
+        <canvas id="statusChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- TOP PRODUCTS -->
+    <div class="admin-card" style="margin-top:1.5rem">
+      <div class="admin-card-header"><h3>Productos Más Vendidos</h3></div>
+      <table class="admin-table">
+        <thead><tr><th>#</th><th>Producto</th><th>Unidades Vendidas</th><th>Total</th></tr></thead>
+        <tbody>
+          <% topProducts.forEach((p, i) => { %>
+          <tr>
+            <td><strong>#<%= i+1 %></strong></td>
+            <td><%= p.product_name %></td>
+            <td><span class="badge-status status-confirmed"><%= p.quantity %> uds</span></td>
+            <td>$<%= Number(p.total_price).toLocaleString('es-CO') %></td>
+          </tr>
+          <% }) %>
+          <% if (topProducts.length === 0) { %><tr><td colspan="4" class="text-center">Sin datos aún</td></tr><% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const byMonth = <%- byMonth %>;
+const byStatus = <%- byStatus %>;
+
+// Monthly chart
+const monthCtx = document.getElementById('monthlyChart').getContext('2d');
+new Chart(monthCtx, {
+  type: 'bar',
+  data: {
+    labels: Object.keys(byMonth),
+    datasets: [{
+      label: 'Ingresos ($)',
+      data: Object.values(byMonth),
+      backgroundColor: 'rgba(230, 57, 70, 0.7)',
+      borderColor: '#e63946',
+      borderWidth: 1,
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { color: '#e8e8e8' } } },
+    scales: {
+      x: { ticks: { color: '#888' }, grid: { color: '#333' } },
+      y: { ticks: { color: '#888', callback: v => '$' + Number(v).toLocaleString('es-CO') }, grid: { color: '#333' } }
+    }
+  }
+});
+
+// Status chart
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(byStatus),
+    datasets: [{
+      data: Object.values(byStatus),
+      backgroundColor: ['#e63946','#2a9d8f','#f4c430','#818cf8','#4ade80','#888'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { color: '#e8e8e8' } } }
+  }
+});
+</script>
+
+<%- include('../partials/footer') %>

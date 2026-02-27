@@ -1,0 +1,56 @@
+<%- include('../partials/header') %>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-brand"><i class="fas fa-cog"></i><span>Administración</span></div>
+    <nav class="admin-nav">
+      <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+      <a href="/admin/productos"><i class="fas fa-box"></i> Productos</a>
+      <a href="/admin/pedidos"><i class="fas fa-shopping-bag"></i> Pedidos</a>
+      <a href="/admin/banners" class="active"><i class="fas fa-images"></i> Banners</a>
+      <a href="/admin/categorias"><i class="fas fa-tags"></i> Categorías</a>
+      <a href="/admin/usuarios"><i class="fas fa-users"></i> Usuarios</a>
+      <a href="/admin/reportes"><i class="fas fa-chart-bar"></i> Reportes</a>
+      <div class="admin-nav-divider"></div>
+      <a href="/"><i class="fas fa-store"></i> Ver Tienda</a>
+    </nav>
+  </aside>
+  <div class="admin-main">
+    <div class="admin-header"><h1>Banners del Home</h1></div>
+    <div class="admin-grid-2">
+      <div class="admin-card" style="padding:1.5rem">
+        <h3>Nuevo Banner</h3>
+        <form action="/admin/banners" method="POST" enctype="multipart/form-data">
+          <div class="form-group"><label>Imagen del Banner</label><input type="file" name="banner_image" accept="image/*"></div>
+          <div class="form-group"><label>O URL de imagen</label><input type="url" name="image_url" placeholder="https://..."></div>
+          <div class="form-group"><label>Título</label><input type="text" name="title" placeholder="¡Oferta especial!"></div>
+          <div class="form-group"><label>Subtítulo</label><input type="text" name="subtitle" placeholder="Hasta 30% de descuento"></div>
+          <div class="form-group"><label>Enlace (opcional)</label><input type="text" name="link" placeholder="/productos?categoria=motor"></div>
+          <div class="form-group"><label>Orden</label><input type="number" name="sort_order" value="0" min="0"></div>
+          <label class="toggle-check" style="margin-bottom:1rem"><input type="checkbox" name="is_active" checked><span>Banner activo</span></label>
+          <button type="submit" class="btn btn-primary">Crear Banner</button>
+        </form>
+      </div>
+      <div class="admin-card">
+        <div class="admin-card-header"><h3>Banners Activos</h3></div>
+        <% if (banners.length > 0) { %>
+        <% banners.forEach(b => { %>
+        <div style="display:flex;align-items:center;gap:1rem;padding:1rem;border-bottom:1px solid var(--border)">
+          <% if (b.image_url) { %><img src="<%= b.image_url %>" style="width:80px;height:50px;object-fit:cover;border-radius:4px"><% } %>
+          <div style="flex:1">
+            <strong><%= b.title || 'Sin título' %></strong>
+            <p style="font-size:0.8rem;color:var(--text-muted);margin:0"><%= b.subtitle || '' %></p>
+            <span class="badge-status <%= b.is_active ? 'status-confirmed' : 'status-cancelled' %>"><%= b.is_active ? 'Activo' : 'Inactivo' %></span>
+          </div>
+          <form action="/admin/banners/<%= b.id %>/eliminar" method="POST">
+            <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar?')"><i class="fas fa-trash"></i></button>
+          </form>
+        </div>
+        <% }) %>
+        <% } else { %>
+        <p style="padding:1.5rem;color:var(--text-muted)">No hay banners creados aún</p>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>
