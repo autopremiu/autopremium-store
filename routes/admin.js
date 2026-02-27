@@ -48,7 +48,7 @@ router.post('/productos/nuevo', upload.array('product_images', 5), async (req, r
   let thumbnail = thumbnail_url || '';
 
   if (req.files && req.files.length > 0) {
-    images = req.files.map(f => f.path);
+    images = req.files.filter(f => f.path).map(f => f.path);
     thumbnail = images[0];
   }
 
@@ -83,7 +83,7 @@ router.post('/productos/:id/editar', upload.array('product_images', 5), async (r
   let updates = { name, description, short_description, price: parseFloat(price), compare_price: compare_price ? parseFloat(compare_price) : null, stock: parseInt(stock), sku, category_id: category_id || null, brand_id: brand_id || null, is_active: is_active === 'on', is_featured: is_featured === 'on' };
 
   if (req.files && req.files.length > 0) {
-    updates.images = req.files.map(f => f.path);
+    updates.images = req.files.filter(f => f.path).map(f => f.path);
     updates.thumbnail = updates.images[0];
   } else if (thumbnail_url) {
     updates.thumbnail = thumbnail_url;

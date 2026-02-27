@@ -12,12 +12,8 @@ router.get('/login', redirectIfAuth, (req, res) => {
 // POST Login
 router.post('/login', redirectIfAuth, async (req, res) => {
   const { email, password } = req.body;
-  console.log('LOGIN INTENT:', email);
   try {
-    const { data: user, error } = await supabaseAdmin.from('users')
-      .select('*').eq('email', email.toLowerCase()).eq('is_active', true).single();
-    console.log('USER FOUND:', user);
-    console.log('ERROR:', error);
+    const { data: user } = await supabaseAdmin.from('users').select('*').eq('email', email.toLowerCase()).eq('is_active', true).single();
     
     if (!user || !await bcrypt.compare(password, user.password_hash)) {
       return res.render('auth/login', { title: 'Iniciar Sesión', error: 'Email o contraseña incorrectos', success: null });
