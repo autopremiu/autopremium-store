@@ -6,6 +6,9 @@ const path = require('path');
 
 const app = express();
 
+// Trust proxy (necesario para Render)
+app.set('trust proxy', 1);
+
 // ============================================
 // MIDDLEWARE
 // ============================================
@@ -14,14 +17,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Session
+// Session - secure:false para que funcione en Render
 app.use(session({
   secret: process.env.SESSION_SECRET || 'autopremium-secret-key-2024',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    secure: false,
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000
   }
 }));
 
@@ -57,7 +62,7 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
   console.error('Server Error:', err);
-  res.status(500).render('error', { 
+  res.status(500).render('error', {
     title: 'Error del servidor',
     message: process.env.NODE_ENV === 'development' ? err.message : 'Error interno del servidor'
   });
