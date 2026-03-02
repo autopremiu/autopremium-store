@@ -50,6 +50,21 @@ router.post('/confirmar', requireAuth, async (req, res) => {
       product_sku: item.sku, product_image: item.thumbnail,
       quantity: item.quantity, unit_price: item.price, total_price: item.price * item.quantity
     })));
+
+    // Descontar stock y actualizar sold_count por cada producto
+    await Promise.all(cart.items.map(async (item) => {
+      const { data: product } = await supabaseAdmin
+        .from('products')
+        .select('stock, sold_count')
+        .eq('id', item.id)
+        .single();
+      if (product) {
+        await supabaseAdmin.from('products').update({
+          stock: Math.max(0, product.stock - item.quantity),
+          sold_count: (product.sold_count || 0) + item.quantity
+        }).eq('id', item.id);
+      }
+    }));
     const { data: fullOrder } = await supabaseAdmin.from('orders').select('*, order_items(*)').eq('id', order.id).single();
     const { data: userData } = await supabaseAdmin.from('users').select('email').eq('id', req.session.user.id).single();
     if (fullOrder) {

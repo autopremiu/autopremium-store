@@ -111,4 +111,40 @@ async function sendOrderConfirmationClient(order, userEmail) {
   }
 }
 
-module.exports = { sendOrderNotificationAdmin, sendOrderConfirmationClient };
+// Email: recuperación de contraseña
+async function sendPasswordResetEmail(user, resetUrl) {
+  try {
+    await transporter.sendMail({
+      from: `"Auto Premium Service" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: '🔐 Restablecer contraseña - Auto Premium Service',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9f9f9;border-radius:8px;overflow:hidden">
+          <div style="background:#e63946;padding:20px;text-align:center">
+            <h1 style="margin:0;color:white">🚗 AUTO PREMIUM SERVICE</h1>
+          </div>
+          <div style="padding:30px;background:white">
+            <h2 style="color:#e63946">Restablecer contraseña</h2>
+            <p>Hola <strong>${user.full_name}</strong>,</p>
+            <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta. Haz clic en el botón para continuar:</p>
+            <div style="text-align:center;margin:30px 0">
+              <a href="${resetUrl}" style="background:#e63946;color:white;padding:14px 32px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:16px">
+                Restablecer Contraseña
+              </a>
+            </div>
+            <p style="color:#666;font-size:14px">Este enlace expira en <strong>1 hora</strong>. Si no solicitaste restablecer tu contraseña, ignora este mensaje.</p>
+            <p style="color:#999;font-size:12px;word-break:break-all">Si el botón no funciona, copia este enlace en tu navegador:<br>${resetUrl}</p>
+          </div>
+          <div style="background:#111;padding:15px;text-align:center;color:#888;font-size:12px">
+            © 2026 Auto Premium Service. Todos los derechos reservados.
+          </div>
+        </div>
+      `
+    });
+    console.log('✅ Email reset enviado');
+  } catch (err) {
+    console.error('❌ Error email reset:', err.message);
+  }
+}
+
+module.exports = { sendOrderNotificationAdmin, sendOrderConfirmationClient, sendPasswordResetEmail };
