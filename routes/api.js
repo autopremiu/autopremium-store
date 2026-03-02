@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabaseAdmin } = require('../config/supabase');
+const { requireAuth } = require('../middleware/auth');
 
 // Search products
 router.get('/search', async (req, res) => {
@@ -29,6 +30,40 @@ router.post('/coupon', async (req, res) => {
 router.get('/stock/:id', async (req, res) => {
   const { data: product } = await supabaseAdmin.from('products').select('stock').eq('id', req.params.id).single();
   res.json({ stock: product?.stock || 0 });
+});
+
+// ============================================
+// WISHLIST
+// ============================================
+
+// Obtener IDs de wishlist del usuario (para marcar corazones al cargar la página)
+router.get('/wishlist', requireAuth, async (req, res) => {
+  const { data } = await supabaseAdmin
+    .from('wishlists')
+    .select('product_id')
+    .eq('user_id', req.session.user.id);
+  res.json({ success: true, items: (data || []).map(w => w.product_id) });
+});
+
+// Agregar o quitar de wishlist (toggle)
+router.post('/wishlist/toggle', requireAuth, async (req, res) => {
+  const { product_id } = req.body;
+  const user_id = req.session.user.id;
+
+  const { data: existing } = await supabaseAdmin
+    .from('wishlists')
+    .select('id')
+    .eq('user_id', user_id)
+    .eq('product_id', product_id)
+    .single();
+
+  if (existing) {
+    await supabaseAdmin.from('wishlists').delete().eq('id', existing.id);
+    res.json({ success: true, action: 'removed' });
+  } else {
+    await supabaseAdmin.from('wishlists').insert({ user_id, product_id });
+    res.json({ success: true, action: 'added' });
+  }
 });
 
 module.exports = router;

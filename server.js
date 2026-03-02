@@ -38,7 +38,6 @@ app.set('views', path.join(__dirname, 'views'));
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   res.locals.cart = req.session.cart || { items: [], total: 0, count: 0 };
-  res.locals.stripePK = process.env.STRIPE_PUBLISHABLE_KEY || '';
   next();
 });
 

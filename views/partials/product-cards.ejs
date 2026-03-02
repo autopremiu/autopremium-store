@@ -31,7 +31,60 @@
     <button class="btn btn-primary btn-add-cart" data-id="<%= product.id %>" data-name="<%= product.name %>">
       <i class="fas fa-cart-plus"></i> Agregar
     </button>
-    <button class="btn btn-icon-sm btn-wishlist"><i class="far fa-heart"></i></button>
+    <button class="btn btn-icon-sm btn-wishlist" data-id="<%= product.id %>" title="Agregar a favoritos">
+      <i class="far fa-heart"></i>
+    </button>
   </div>
 </div>
 <% }) %>
+
+<script>
+// Marcar corazones de productos que ya están en wishlist
+(async function() {
+  try {
+    const res = await fetch('/api/wishlist');
+    if (!res.ok) return; // no autenticado, no hacer nada
+    const data = await res.json();
+    if (!data.success) return;
+    data.items.forEach(id => {
+      document.querySelectorAll(`.btn-wishlist[data-id="${id}"] i`).forEach(icon => {
+        icon.classList.replace('far', 'fas');
+        icon.closest('.btn-wishlist').classList.add('active');
+      });
+    });
+  } catch(e) {}
+})();
+
+// Toggle wishlist al hacer click
+document.querySelectorAll('.btn-wishlist').forEach(btn => {
+  btn.addEventListener('click', async function(e) {
+    e.preventDefault();
+    const product_id = this.dataset.id;
+    const icon = this.querySelector('i');
+
+    try {
+      const res = await fetch('/api/wishlist/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id })
+      });
+
+      if (res.status === 401) {
+        window.location.href = '/auth/login';
+        return;
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        if (data.action === 'added') {
+          icon.classList.replace('far', 'fas');
+          this.classList.add('active');
+        } else {
+          icon.classList.replace('fas', 'far');
+          this.classList.remove('active');
+        }
+      }
+    } catch(e) {}
+  });
+});
+</script>

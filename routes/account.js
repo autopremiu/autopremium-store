@@ -58,4 +58,16 @@ router.post('/direcciones/:id/eliminar', async (req, res) => {
   res.redirect('/account/direcciones');
 });
 
+// Wishlist
+router.get('/favoritos', async (req, res) => {
+  const { data } = await supabaseAdmin
+    .from('wishlists')
+    .select('product_id, products(id, name, slug, price, compare_price, thumbnail, rating, review_count, brands(name))')
+    .eq('user_id', req.session.user.id)
+    .order('created_at', { ascending: false });
+
+  const products = (data || []).map(w => w.products).filter(Boolean);
+  res.render('account/wishlist', { title: 'Mis Favoritos', products });
+});
+
 module.exports = router;
