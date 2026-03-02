@@ -35,8 +35,14 @@ router.get('/productos', async (req, res) => {
     let query = supabaseAdmin.from('products').select('*, categories(name, slug), brands(name)', { count: 'exact' }).eq('is_active', true);
 
     if (q) query = query.ilike('name', `%${q}%`);
-    if (categoria) query = query.eq('categories.slug', categoria);
-    if (marca) query = query.eq('brands.slug', marca);
+    if (categoria) {
+      const { data: catData } = await supabaseAdmin.from('categories').select('id').eq('slug', categoria).single();
+      if (catData) query = query.eq('category_id', catData.id);
+    }
+    if (marca) {
+      const { data: brandData } = await supabaseAdmin.from('brands').select('id').eq('slug', marca).single();
+      if (brandData) query = query.eq('brand_id', brandData.id);
+    }
     if (min) query = query.gte('price', min);
     if (max) query = query.lte('price', max);
 
@@ -61,7 +67,6 @@ router.get('/productos', async (req, res) => {
       products: products || [],
       categories: categoriesRes.data || [],
       brands: brandsRes.data || [],
-      banners: bannersRes.data || [],
       total: count || 0,
       page: parseInt(page),
       totalPages: Math.ceil((count || 0) / limit),
