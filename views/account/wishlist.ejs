@@ -1,0 +1,23 @@
+<section class="account-section">
+  <div class="container">
+    <div class="account-header">
+      <h1>❤️ Mis Favoritos</h1>
+      <p>Productos que has guardado para después</p>
+    </div>
+
+    <% if (products.length === 0) { %>
+      <div class="empty-state">
+        <i class="fas fa-heart-broken"></i>
+        <h3>No tienes productos en favoritos</h3>
+        <p>Explora nuestro catálogo y guarda los que más te gusten.</p>
+        <a href="/productos" class="btn btn-primary">
+          Ver productos
+        </a>
+      </div>
+    <% } else { %>
+      <div class="products-grid">
+        <%- include('../partials/product-cards', { products }) %>
+      </div>
+    <% } %>
+  </div>
+</section>

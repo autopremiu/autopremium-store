@@ -37,7 +37,7 @@ router.post('/payu', requireAuth, async (req, res) => {
 
   try {
     const referenceCode = `ORDER-${Date.now()}`;
-    const amount = parseFloat(cart.total).toString();
+    const amount = Number(cart.total).toFixed(2);
     const currency = 'COP';
 
     // 🔹 Crear orden PENDING
