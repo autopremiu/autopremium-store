@@ -92,3 +92,47 @@ const navMenu = document.getElementById('navMenu');
 if (navToggle && navMenu) {
   navToggle.addEventListener('click', () => navMenu.classList.toggle('open'));
 }
+
+
+// ===============================
+// WISHLIST TOGGLE
+// ===============================
+document.addEventListener("click", async (e) => {
+
+  const btn = e.target.closest(".btn-wishlist"); // 👈 CAMBIO AQUÍ
+  if (!btn) return;
+
+  const product_id = btn.dataset.id;
+
+  try {
+    const res = await fetch("/api/wishlist/toggle", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ product_id })
+    });
+
+    if (res.status === 401) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const data = await res.json();
+    const icon = btn.querySelector("i");
+
+    if (data.action === "added") {
+      icon.classList.remove("far");
+      icon.classList.add("fas");
+    }
+
+    if (data.action === "removed") {
+      icon.classList.remove("fas");
+      icon.classList.add("far");
+    }
+
+  } catch (error) {
+    console.error("Wishlist error:", error);
+  }
+
+});
