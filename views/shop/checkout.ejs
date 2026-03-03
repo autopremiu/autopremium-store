@@ -15,9 +15,10 @@
         <div class="saved-addresses">
           <% addresses.forEach(addr => { %>
             <label class="addr-option">
-              <input type="radio" name="saved_address"
-                value='<%= JSON.stringify(addr) %>'
-                onchange="fillAddress(this.value)">
+              <input type="radio"
+                     name="saved_address"
+                     value='<%= JSON.stringify(addr) %>'
+                     onchange="fillAddress(this.value)">
               <div>
                 <strong><%= addr.full_name %></strong>
                 <span><%= addr.address_line1 %>, <%= addr.city %>, <%= addr.state %></span>
@@ -127,41 +128,72 @@
 function fillAddress(val) {
   if (val === 'new') return;
   const a = JSON.parse(val);
-  addrName.value = a.full_name || '';
-  addrPhone.value = a.phone || '';
-  addrLine1.value = a.address_line1 || '';
-  addrLine2.value = a.address_line2 || '';
-  addrCity.value = a.city || '';
-  addrState.value = a.state || '';
-  addrPostal.value = a.postal_code || '';
+
+  document.getElementById('addrName').value = a.full_name || '';
+  document.getElementById('addrPhone').value = a.phone || '';
+  document.getElementById('addrLine1').value = a.address_line1 || '';
+  document.getElementById('addrLine2').value = a.address_line2 || '';
+  document.getElementById('addrCity').value = a.city || '';
+  document.getElementById('addrState').value = a.state || '';
+  document.getElementById('addrPostal').value = a.postal_code || '';
 }
 
 document.getElementById('placeOrderBtn').addEventListener('click', async () => {
-  const btn = placeOrderBtn;
+  const btn = document.getElementById('placeOrderBtn');
+
+  // Validación básica
+  if (!addrName.value || !addrPhone.value || !addrLine1.value || !addrCity.value || !addrState.value) {
+    alert('Por favor completa todos los campos obligatorios.');
+    return;
+  }
+
   btn.disabled = true;
-  btn.innerHTML = 'Redirigiendo a PayU...';
+  btn.innerHTML = 'Procesando...';
 
-  const res = await fetch('/checkout/payu', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      shipping_address: {
-        full_name: addrName.value,
-        phone: addrPhone.value,
-        address_line1: addrLine1.value,
-        address_line2: addrLine2.value,
-        city: addrCity.value,
-        state: addrState.value,
-        postal_code: addrPostal.value,
-        country: 'Colombia'
-      },
-      notes: orderNotes.value
-    })
-  });
+  try {
+    const res = await fetch('/checkout/payu', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        shipping_address: {
+          full_name: addrName.value,
+          phone: addrPhone.value,
+          address_line1: addrLine1.value,
+          address_line2: addrLine2.value,
+          city: addrCity.value,
+          state: addrState.value,
+          postal_code: addrPostal.value,
+          country: 'Colombia'
+        },
+        notes: orderNotes.value
+      })
+    });
 
-  const data = await res.json();
-  document.body.innerHTML = data.form;
-  document.forms[0].submit();
+    const data = await res.json();
+    console.log(data);
+
+    if (data.error) {
+      alert(data.error);
+      btn.disabled = false;
+      btn.innerHTML = '🔒 Confirmar Pedido';
+      return;
+    }
+
+    if (!data.form) {
+      alert('Error iniciando pago.');
+      btn.disabled = false;
+      btn.innerHTML = '🔒 Confirmar Pedido';
+      return;
+    }
+
+    document.body.innerHTML = data.form;
+    document.forms[0].submit();
+
+  } catch (err) {
+    alert('Error al procesar el pago.');
+    btn.disabled = false;
+    btn.innerHTML = '🔒 Confirmar Pedido';
+  }
 });
 </script>
 

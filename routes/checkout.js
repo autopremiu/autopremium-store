@@ -11,7 +11,6 @@ const { sendOrderNotificationAdmin, sendOrderConfirmationClient } = require('../
 // =============================
 router.get('/', requireAuth, async (req, res) => {
   const cart = req.session.cart;
-
   if (!cart || cart.items.length === 0) return res.redirect('/cart');
 
   const { data: addresses } = await supabaseAdmin
@@ -38,10 +37,10 @@ router.post('/payu', requireAuth, async (req, res) => {
 
   try {
     const referenceCode = `ORDER-${Date.now()}`;
-    const amount = Number(cart.total).toFixed(2);
+    const amount = parseFloat(cart.total).toString();
     const currency = 'COP';
 
-    // 🔹 Crear orden en estado pending
+    // 🔹 Crear orden PENDING
     const { data: order, error } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -63,14 +62,15 @@ router.post('/payu', requireAuth, async (req, res) => {
 
     if (error) throw error;
 
-    // 🔹 Generar firma PayU
-    const signatureString = `${process.env.PAYU_API_KEY}~${process.env.PAYU_MERCHANT_ID}~${referenceCode}~${amount}~${currency}`;
+    // 🔹 Firma PayU
+    const signatureString =
+      `${process.env.PAYU_API_KEY}~${process.env.PAYU_MERCHANT_ID}~${referenceCode}~${amount}~${currency}`;
+
     const signature = crypto
       .createHash('md5')
       .update(signatureString)
       .digest('hex');
 
-    // 🔹 Formulario redirección PayU
     const form = `
       <form method="POST" action="https://sandbox.checkout.payulatam.com/ppp-web-gateway-payu/">
         <input name="merchantId" value="${process.env.PAYU_MERCHANT_ID}" />
@@ -84,7 +84,7 @@ router.post('/payu', requireAuth, async (req, res) => {
         <input name="signature" value="${signature}" />
         <input name="test" value="1" />
         <input name="buyerEmail" value="${req.session.user.email}" />
-        <input name="responseUrl" value="https://TU_DOMINIO.com/checkout/confirmacion/${order.order_number}" />
+        <input name="responseUrl" value="https://TU_DOMINIO.com/checkout/confirmacion/${referenceCode}" />
         <input name="confirmationUrl" value="https://TU_DOMINIO.com/checkout/payu-confirmacion" />
       </form>
     `;
@@ -92,14 +92,14 @@ router.post('/payu', requireAuth, async (req, res) => {
     res.json({ form });
 
   } catch (err) {
-    console.error('PayU init error:', err);
+    console.error('PayU init error:', err.message);
     res.json({ error: 'Error iniciando pago PayU' });
   }
 });
 
 
 // =============================
-// WEBHOOK CONFIRMACIÓN PAYU
+// WEBHOOK PAYU (SIN SESSION)
 // =============================
 router.post('/payu-confirmacion', async (req, res) => {
   try {
@@ -111,19 +111,19 @@ router.post('/payu-confirmacion', async (req, res) => {
       sign
     } = req.body;
 
-    // 🔹 Validar firma
-    const signatureString = `${process.env.PAYU_API_KEY}~${process.env.PAYU_MERCHANT_ID}~${reference_sale}~${value}~${currency}~${state_pol}`;
+    const signatureString =
+      `${process.env.PAYU_API_KEY}~${process.env.PAYU_MERCHANT_ID}~${reference_sale}~${value}~${currency}~${state_pol}`;
+
     const localSignature = crypto
       .createHash('md5')
       .update(signatureString)
       .digest('hex');
 
     if (localSignature !== sign) {
-      console.log('Firma PayU inválida');
+      console.log('Firma inválida PayU');
       return res.sendStatus(400);
     }
 
-    // 🔥 4 = APROBADO
     if (state_pol == 4) {
 
       const { data: order } = await supabaseAdmin
@@ -138,75 +138,50 @@ router.post('/payu-confirmacion', async (req, res) => {
 
       if (order) {
 
-        // Obtener carrito
-        const cart = req.session.cart;
+        const { data: items } = await supabaseAdmin
+          .from('order_items')
+          .select('*')
+          .eq('order_id', order.id);
 
-        if (cart?.items?.length) {
-          await supabaseAdmin.from('order_items').insert(
-            cart.items.map(item => ({
-              order_id: order.id,
-              product_id: item.id,
-              product_name: item.name,
-              product_sku: item.sku,
-              product_image: item.thumbnail,
-              quantity: item.quantity,
-              unit_price: item.price,
-              total_price: item.price * item.quantity
-            }))
-          );
-
-          // Descontar stock
-          await Promise.all(cart.items.map(async (item) => {
+        if (items) {
+          await Promise.all(items.map(async (item) => {
             const { data: product } = await supabaseAdmin
               .from('products')
               .select('stock, sold_count')
-              .eq('id', item.id)
+              .eq('id', item.product_id)
               .single();
 
             if (product) {
               await supabaseAdmin.from('products').update({
                 stock: Math.max(0, product.stock - item.quantity),
                 sold_count: (product.sold_count || 0) + item.quantity
-              }).eq('id', item.id);
+              }).eq('id', item.product_id);
             }
           }));
         }
 
-        // Emails
-        const { data: fullOrder } = await supabaseAdmin
-          .from('orders')
-          .select('*, order_items(*)')
-          .eq('id', order.id)
-          .single();
-
-        if (fullOrder) {
-          sendOrderNotificationAdmin(fullOrder).catch(() => {});
-          sendOrderConfirmationClient(fullOrder, req.session.user.email).catch(() => {});
-        }
-
-        // Vaciar carrito
-        req.session.cart = { items: [], count: 0, subtotal: 0, total: 0 };
+        sendOrderNotificationAdmin(order).catch(() => {});
       }
     }
 
     res.sendStatus(200);
 
   } catch (err) {
-    console.error('PayU confirm error:', err);
+    console.error('PayU confirm error:', err.message);
     res.sendStatus(500);
   }
 });
 
 
 // =============================
-// CONFIRMACIÓN VISTA
+// CONFIRMACION VISTA
 // =============================
-router.get('/confirmacion/:order_number', requireAuth, async (req, res) => {
+router.get('/confirmacion/:reference_code', requireAuth, async (req, res) => {
 
   const { data: order } = await supabaseAdmin
     .from('orders')
     .select('*, order_items(*)')
-    .eq('order_number', req.params.order_number)
+    .eq('reference_code', req.params.reference_code)
     .eq('user_id', req.session.user.id)
     .single();
 
