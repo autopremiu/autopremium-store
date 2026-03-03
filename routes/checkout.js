@@ -36,11 +36,24 @@ router.post('/payu', requireAuth, async (req, res) => {
     return res.json({ error: 'Carrito vacío' });
 
   try {
+
+    // =============================
+    // 🔹 CONFIG ENVÍO
+    // =============================
+    const FREE_SHIPPING_MIN = 150000;
+    const SHIPPING_COST = 10000;
+
+    const subtotal = Number(cart.subtotal);
+    const shipping_cost = subtotal >= FREE_SHIPPING_MIN ? 0 : SHIPPING_COST;
+    const total = subtotal + shipping_cost;
+
     const referenceCode = `ORDER-${Date.now()}`;
-    const amount = Number(cart.total).toFixed(2);
+    const amount = total.toFixed(2);
     const currency = 'COP';
 
-    // 🔹 Crear orden PENDING
+    // =============================
+    // 🔹 CREAR ORDEN PENDING
+    // =============================
     const { data: order, error } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -48,11 +61,11 @@ router.post('/payu', requireAuth, async (req, res) => {
         status: 'pending',
         payment_status: 'pending',
         payment_method: 'payu',
-        subtotal: cart.subtotal,
-        shipping_cost: 0,
+        subtotal: subtotal,
+        shipping_cost: shipping_cost,
         tax: 0,
         discount: 0,
-        total: cart.total,
+        total: total,
         shipping_address: req.body.shipping_address,
         notes: req.body.notes,
         reference_code: referenceCode
@@ -62,7 +75,9 @@ router.post('/payu', requireAuth, async (req, res) => {
 
     if (error) throw error;
 
-    // 🔹 Firma PayU
+    // =============================
+    // 🔹 FIRMA PAYU
+    // =============================
     const signatureString =
       `${process.env.PAYU_API_KEY}~${process.env.PAYU_MERCHANT_ID}~${referenceCode}~${amount}~${currency}`;
 
