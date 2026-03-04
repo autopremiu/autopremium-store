@@ -1,5 +1,11 @@
 <%- include('../partials/header') %>
 
+<%
+const FREE_SHIPPING = 150000;
+const subtotalCalc = cart.subtotal || cart.total || 0;
+const faltante = FREE_SHIPPING - subtotalCalc;
+%>
+
 <div class="container" style="padding-top:2rem;padding-bottom:3rem">
   <h1 class="page-title">Carrito de Compras</h1>
 
@@ -23,27 +29,60 @@
             <div class="product-img-placeholder sm"><i class="fas fa-cog"></i></div>
           <% } %>
         </div>
+
         <div class="cart-item-info">
           <a href="/producto/<%= item.slug %>"><%= item.name %></a>
           <% if (item.sku) { %><span class="sku-small">SKU: <%= item.sku %></span><% } %>
           <span class="item-unit-price">$<%= Number(item.price).toLocaleString('es-CO') %> c/u</span>
         </div>
+
         <div class="cart-item-qty">
           <button onclick="updateQty('<%= item.id %>', <%= item.quantity - 1 %>)">−</button>
           <span id="qty-<%= item.id %>"><%= item.quantity %></span>
           <button onclick="updateQty('<%= item.id %>', <%= item.quantity + 1 %>)">+</button>
         </div>
+
         <div class="cart-item-total" id="total-<%= item.id %>">
           $<%= Number(item.price * item.quantity).toLocaleString('es-CO') %>
         </div>
-        <button class="btn-remove" onclick="removeItem('<%= item.id %>')"><i class="fas fa-trash"></i></button>
+
+        <button class="btn-remove" onclick="removeItem('<%= item.id %>')">
+          <i class="fas fa-trash"></i>
+        </button>
       </div>
       <% }) %>
     </div>
 
     <div class="cart-summary">
       <h3>Resumen del Pedido</h3>
-      
+
+      <!-- ENVIO GRATIS INDICADOR -->
+      <div class="free-shipping-bar" id="freeShippingBar">
+
+        <% if (faltante > 0) { %>
+
+        <div class="shipping-progress">
+          <div class="progress-fill" id="shippingProgress"
+          style="width:<%= Math.min((subtotalCalc / FREE_SHIPPING) * 100, 100) %>%">
+          </div>
+        </div>
+
+        <p class="shipping-msg" id="shippingMsg">
+          🚚 Te faltan 
+          <strong>$<%= Number(faltante).toLocaleString('es-CO') %></strong>
+          para obtener <strong>envío gratis</strong>
+        </p>
+
+        <% } else { %>
+
+        <p class="shipping-msg success" id="shippingMsg">
+          🎉 ¡Tu pedido tiene envío gratis!
+        </p>
+
+        <% } %>
+
+      </div>
+
       <div class="coupon-form">
         <input type="text" id="couponInput" placeholder="Código de cupón">
         <button onclick="applyCoupon()" class="btn btn-outline btn-sm">Aplicar</button>
@@ -51,30 +90,47 @@
       </div>
 
       <div class="summary-lines">
+
         <div class="summary-line">
           <span>Subtotal</span>
-          <span id="summarySubtotal">$<%= Number(cart.subtotal || cart.total).toLocaleString('es-CO') %></span>
+          <span id="summarySubtotal">
+          $<%= Number(cart.subtotal || cart.total).toLocaleString('es-CO') %>
+          </span>
         </div>
+
         <div class="summary-line" id="discountLine" style="display:none;color:#e63946">
           <span>Descuento</span>
           <span id="discountAmount">-$0</span>
         </div>
+
         <div class="summary-line">
           <span>Envío</span>
-          <span>Gratis</span>
+          <span id="shippingText">
+            <% if ((cart.subtotal || cart.total) >= FREE_SHIPPING) { %>
+              Gratis
+            <% } else { %>
+              Se calcula al pagar
+            <% } %>
+          </span>
         </div>
+
         <div class="summary-line total">
           <span>Total</span>
           <span id="summaryTotal">$<%= Number(cart.total).toLocaleString('es-CO') %></span>
         </div>
+
       </div>
 
-      <a href="/checkout" class="btn btn-primary btn-lg" style="width:100%;text-align:center;display:block">
+      <a href="/checkout" class="btn btn-primary btn-lg"
+         style="width:100%;text-align:center;display:block">
         <i class="fas fa-lock"></i> Finalizar Compra
       </a>
-      <a href="/productos" class="btn btn-outline" style="width:100%;text-align:center;display:block;margin-top:0.5rem">
+
+      <a href="/productos" class="btn btn-outline"
+         style="width:100%;text-align:center;display:block;margin-top:0.5rem">
         Seguir Comprando
       </a>
+
     </div>
   </div>
 
@@ -82,62 +138,165 @@
 </div>
 
 <script>
-function formatPrice(n) {
-  return '$' + Math.round(n).toLocaleString('es-CO');
+
+const FREE_SHIPPING = 150000;
+
+function formatPrice(n){
+return '$' + Math.round(n).toLocaleString('es-CO');
 }
 
-function updateQty(id, qty) {
-  fetch('/cart/actualizar', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ product_id: id, quantity: qty })
-  }).then(r => r.json()).then(data => {
-    if (data.success) {
-      if (qty <= 0) {
-        document.getElementById('cart-item-' + id)?.remove();
-      } else {
-        const item = data.cart.items.find(i => i.id === id);
-        if (item) {
-          document.getElementById('qty-' + id).textContent = item.quantity;
-          document.getElementById('total-' + id).textContent = formatPrice(item.price * item.quantity);
-        }
-      }
-      document.getElementById('cartCount').textContent = data.cart.count;
-      document.getElementById('summarySubtotal').textContent = formatPrice(data.cart.subtotal);
-      document.getElementById('summaryTotal').textContent = formatPrice(data.cart.total);
-      if (data.cart.count === 0) location.reload();
-    }
-  });
+function updateShippingBar(subtotal){
+
+const faltante = FREE_SHIPPING - subtotal;
+const progress = Math.min((subtotal / FREE_SHIPPING) * 100,100);
+
+const bar = document.getElementById('shippingProgress');
+const msg = document.getElementById('shippingMsg');
+const shippingText = document.getElementById('shippingText');
+
+if(bar) bar.style.width = progress + '%';
+
+if(faltante > 0){
+msg.className='shipping-msg';
+msg.innerHTML='🚚 Te faltan <strong>'+formatPrice(faltante)+'</strong> para obtener <strong>envío gratis</strong>';
+shippingText.textContent='Se calcula al pagar';
+}else{
+msg.className='shipping-msg success';
+msg.innerHTML='🎉 ¡Tu pedido tiene envío gratis!';
+shippingText.textContent='Gratis';
 }
 
-function removeItem(id) {
-  fetch('/cart/eliminar', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ product_id: id })
-  }).then(r => r.json()).then(data => {
-    document.getElementById('cart-item-' + id)?.remove();
-    document.getElementById('cartCount').textContent = data.cart.count;
-    document.getElementById('summaryTotal').textContent = formatPrice(data.cart.total);
-    if (data.cart.count === 0) location.reload();
-  });
 }
 
-async function applyCoupon() {
-  const code = document.getElementById('couponInput').value;
-  const total = parseFloat('<%= cart.total %>');
-  const res = await fetch('/api/coupon', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ code, total }) });
-  const data = await res.json();
-  const msg = document.getElementById('couponMsg');
-  if (data.success) {
-    msg.className = 'coupon-msg success';
-    msg.textContent = `Cupón aplicado: -${data.type === 'percentage' ? data.value + '%' : formatPrice(data.value)}`;
-    document.getElementById('discountLine').style.display = 'flex';
-    document.getElementById('discountAmount').textContent = '-' + formatPrice(data.discount);
-    document.getElementById('summaryTotal').textContent = formatPrice(total - data.discount);
-  } else {
-    msg.className = 'coupon-msg error';
-    msg.textContent = data.message;
-  }
+function updateQty(id,qty){
+
+fetch('/cart/actualizar',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({product_id:id,quantity:qty})
+})
+.then(r=>r.json())
+.then(data=>{
+
+if(data.success){
+
+if(qty<=0){
+document.getElementById('cart-item-'+id)?.remove();
+}else{
+
+const item=data.cart.items.find(i=>i.id===id);
+
+if(item){
+document.getElementById('qty-'+id).textContent=item.quantity;
+document.getElementById('total-'+id).textContent=formatPrice(item.price*item.quantity);
 }
+
+}
+
+document.getElementById('cartCount').textContent=data.cart.count;
+
+document.getElementById('summarySubtotal').textContent=formatPrice(data.cart.subtotal);
+document.getElementById('summaryTotal').textContent=formatPrice(data.cart.total);
+
+updateShippingBar(data.cart.subtotal);
+
+if(data.cart.count===0) location.reload();
+
+}
+
+});
+
+}
+
+function removeItem(id){
+
+fetch('/cart/eliminar',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({product_id:id})
+})
+.then(r=>r.json())
+.then(data=>{
+
+document.getElementById('cart-item-'+id)?.remove();
+
+document.getElementById('cartCount').textContent=data.cart.count;
+
+document.getElementById('summaryTotal').textContent=formatPrice(data.cart.total);
+
+updateShippingBar(data.cart.subtotal);
+
+if(data.cart.count===0) location.reload();
+
+});
+
+}
+
+async function applyCoupon(){
+
+const code=document.getElementById('couponInput').value;
+const total=parseFloat('<%= cart.total %>');
+
+const res=await fetch('/api/coupon',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({code,total})
+});
+
+const data=await res.json();
+
+const msg=document.getElementById('couponMsg');
+
+if(data.success){
+
+msg.className='coupon-msg success';
+msg.textContent=`Cupón aplicado: -${data.type==='percentage'?data.value+'%':formatPrice(data.value)}`;
+
+document.getElementById('discountLine').style.display='flex';
+document.getElementById('discountAmount').textContent='-'+formatPrice(data.discount);
+document.getElementById('summaryTotal').textContent=formatPrice(total-data.discount);
+
+}else{
+
+msg.className='coupon-msg error';
+msg.textContent=data.message;
+
+}
+
+}
+
 </script>
+
+<style>
+
+.free-shipping-bar{
+margin-bottom:15px;
+}
+
+.shipping-progress{
+height:6px;
+background:#eee;
+border-radius:5px;
+overflow:hidden;
+margin-bottom:6px;
+}
+
+.progress-fill{
+height:100%;
+background:#00c853;
+transition:width .3s;
+}
+
+.shipping-msg{
+font-size:13px;
+color:#555;
+}
+
+.shipping-msg.success{
+color:#00c853;
+font-weight:600;
+}
+
+</style>
 
 <%- include('../partials/footer') %>
