@@ -79,7 +79,7 @@
         <div class="payment-methods">
           <label class="pay-option active">
             <input type="radio" checked>
-            💳 PayU (PSE, Tarjeta, Nequi)
+            💳 Pago seguro (Tarjeta, PSE, Nequi)
           </label>
         </div>
       </div>
@@ -94,7 +94,7 @@
       </button>
 
       <p class="secure-msg">
-        <i class="fas fa-shield-alt"></i> Pago seguro con PayU
+        <i class="fas fa-shield-alt"></i> Pago seguro
       </p>
 
     </div>
@@ -141,7 +141,6 @@ function fillAddress(val) {
 document.getElementById('placeOrderBtn').addEventListener('click', async () => {
   const btn = document.getElementById('placeOrderBtn');
 
-  // Validación básica
   if (!addrName.value || !addrPhone.value || !addrLine1.value || !addrCity.value || !addrState.value) {
     alert('Por favor completa todos los campos obligatorios.');
     return;
@@ -151,7 +150,7 @@ document.getElementById('placeOrderBtn').addEventListener('click', async () => {
   btn.innerHTML = 'Procesando...';
 
   try {
-    const res = await fetch('/checkout/payu', {
+    const res = await fetch('/checkout/create-order', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
@@ -170,7 +169,6 @@ document.getElementById('placeOrderBtn').addEventListener('click', async () => {
     });
 
     const data = await res.json();
-    console.log(data);
 
     if (data.error) {
       alert(data.error);
@@ -179,15 +177,7 @@ document.getElementById('placeOrderBtn').addEventListener('click', async () => {
       return;
     }
 
-    if (!data.form) {
-      alert('Error iniciando pago.');
-      btn.disabled = false;
-      btn.innerHTML = '🔒 Confirmar Pedido';
-      return;
-    }
-
-    document.body.innerHTML = data.form;
-    document.forms[0].submit();
+    window.location.href = data.checkout_url;
 
   } catch (err) {
     alert('Error al procesar el pago.');

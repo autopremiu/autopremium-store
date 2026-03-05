@@ -1,35 +1,5 @@
-const express = require('express');
-const router = express.Router();
-const crypto = require('crypto');
-const { supabaseAdmin } = require('../config/supabase');
-const { requireAuth } = require('../middleware/auth');
-const { sendOrderNotificationAdmin, sendOrderConfirmationClient } = require('../config/email');
+router.post('/create-order', requireAuth, async (req, res) => {
 
-
-// =============================
-// GET CHECKOUT
-// =============================
-router.get('/', requireAuth, async (req, res) => {
-  const cart = req.session.cart;
-  if (!cart || cart.items.length === 0) return res.redirect('/cart');
-
-  const { data: addresses } = await supabaseAdmin
-    .from('addresses')
-    .select('*')
-    .eq('user_id', req.session.user.id);
-
-  res.render('shop/checkout', {
-    title: 'Finalizar Compra',
-    cart,
-    addresses: addresses || []
-  });
-});
-
-
-// =============================
-// INICIAR PAGO PAYU
-// =============================
-router.post('/payu', requireAuth, async (req, res) => {
   const cart = req.session.cart;
 
   if (!cart || cart.items.length === 0)
@@ -37,9 +7,6 @@ router.post('/payu', requireAuth, async (req, res) => {
 
   try {
 
-    // =============================
-    // 🔹 CONFIG ENVÍO
-    // =============================
     const FREE_SHIPPING_MIN = 150000;
     const SHIPPING_COST = 10000;
 
@@ -48,19 +15,14 @@ router.post('/payu', requireAuth, async (req, res) => {
     const total = subtotal + shipping_cost;
 
     const referenceCode = `ORDER-${Date.now()}`;
-    const amount = total.toFixed(2);
-    const currency = 'COP';
 
-    // =============================
-    // 🔹 CREAR ORDEN PENDING
-    // =============================
     const { data: order, error } = await supabaseAdmin
       .from('orders')
       .insert({
         user_id: req.session.user.id,
         status: 'pending',
         payment_status: 'pending',
-        payment_method: 'payu',
+        payment_method: 'wompi',
         subtotal: subtotal,
         shipping_cost: shipping_cost,
         tax: 0,
@@ -75,137 +37,40 @@ router.post('/payu', requireAuth, async (req, res) => {
 
     if (error) throw error;
 
-    // =============================
-    // 🔹 FIRMA PAYU
-    // =============================
-    const signatureString =
-      `${process.env.PAYU_API_KEY}~${process.env.PAYU_MERCHANT_ID}~${referenceCode}~${amount}~${currency}`;
+    // ==========================
+    // 🔹 WOMPI CONFIG
+    // ==========================
 
-    const signature = crypto
-      .createHash('md5')
-      .update(signatureString)
-      .digest('hex');
+    const amountInCents = Math.round(total * 100);
 
-    const form = `
-      <form method="POST" action="https://sandbox.checkout.payulatam.com/ppp-web-gateway-payu/">
-        <input name="merchantId" value="${process.env.PAYU_MERCHANT_ID}" />
-        <input name="accountId" value="${process.env.PAYU_ACCOUNT_ID}" />
-        <input name="description" value="Compra Autopremium" />
-        <input name="referenceCode" value="${referenceCode}" />
-        <input name="amount" value="${amount}" />
-        <input name="tax" value="0" />
-        <input name="taxReturnBase" value="0" />
-        <input name="currency" value="${currency}" />
-        <input name="signature" value="${signature}" />
-        <input name="test" value="1" />
-        <input name="buyerEmail" value="${req.session.user.email}" />
-        <input name="responseUrl" value="https://TU_DOMINIO.com/checkout/confirmacion/${referenceCode}" />
-        <input name="confirmationUrl" value="https://TU_DOMINIO.com/checkout/payu-confirmacion" />
-      </form>
-    `;
+    const integrityString =
+      `${referenceCode}${amountInCents}COP${process.env.WOMPI_INTEGRITY_KEY}`;
 
-    res.json({ form });
+    const integritySignature = require("crypto")
+      .createHash("sha256")
+      .update(integrityString)
+      .digest("hex");
+
+    const checkoutUrl =
+      `https://checkout.wompi.co/p/?public-key=${process.env.WOMPI_PUBLIC_KEY}` +
+      `&currency=COP` +
+      `&amount-in-cents=${amountInCents}` +
+      `&reference=${referenceCode}` +
+      `&signature:integrity=${integritySignature}` +
+      `&redirect-url=${process.env.BASE_URL}/checkout/confirmacion/${referenceCode}`;
+
+    res.json({
+      checkout_url: checkoutUrl
+    });
 
   } catch (err) {
-    console.error('PayU init error:', err.message);
-    res.json({ error: 'Error iniciando pago PayU' });
+
+    console.error('Create order error:', err.message);
+
+    res.json({
+      error: 'Error creando la orden'
+    });
+
   }
+
 });
-
-
-// =============================
-// WEBHOOK PAYU (SIN SESSION)
-// =============================
-router.post('/payu-confirmacion', async (req, res) => {
-  try {
-    const {
-      reference_sale,
-      state_pol,
-      value,
-      currency,
-      sign
-    } = req.body;
-
-    const signatureString =
-      `${process.env.PAYU_API_KEY}~${process.env.PAYU_MERCHANT_ID}~${reference_sale}~${value}~${currency}~${state_pol}`;
-
-    const localSignature = crypto
-      .createHash('md5')
-      .update(signatureString)
-      .digest('hex');
-
-    if (localSignature !== sign) {
-      console.log('Firma inválida PayU');
-      return res.sendStatus(400);
-    }
-
-    if (state_pol == 4) {
-
-      const { data: order } = await supabaseAdmin
-        .from('orders')
-        .update({
-          payment_status: 'paid',
-          status: 'confirmed'
-        })
-        .eq('reference_code', reference_sale)
-        .select()
-        .single();
-
-      if (order) {
-
-        const { data: items } = await supabaseAdmin
-          .from('order_items')
-          .select('*')
-          .eq('order_id', order.id);
-
-        if (items) {
-          await Promise.all(items.map(async (item) => {
-            const { data: product } = await supabaseAdmin
-              .from('products')
-              .select('stock, sold_count')
-              .eq('id', item.product_id)
-              .single();
-
-            if (product) {
-              await supabaseAdmin.from('products').update({
-                stock: Math.max(0, product.stock - item.quantity),
-                sold_count: (product.sold_count || 0) + item.quantity
-              }).eq('id', item.product_id);
-            }
-          }));
-        }
-
-        sendOrderNotificationAdmin(order).catch(() => {});
-      }
-    }
-
-    res.sendStatus(200);
-
-  } catch (err) {
-    console.error('PayU confirm error:', err.message);
-    res.sendStatus(500);
-  }
-});
-
-
-// =============================
-// CONFIRMACION VISTA
-// =============================
-router.get('/confirmacion/:reference_code', requireAuth, async (req, res) => {
-
-  const { data: order } = await supabaseAdmin
-    .from('orders')
-    .select('*, order_items(*)')
-    .eq('reference_code', req.params.reference_code)
-    .eq('user_id', req.session.user.id)
-    .single();
-
-  if (!order) return res.redirect('/');
-
-  res.render('shop/order-confirmation', {
-    title: 'Pedido Confirmado',
-    order
-  });
-});
-
-module.exports = router;
