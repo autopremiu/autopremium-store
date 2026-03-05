@@ -80,4 +80,8 @@ app.listen(PORT, () => {
   `);
 });
 
+app.get("/ping", (req, res) => {
+  res.send("ok");
+});
+
 module.exports = app;
