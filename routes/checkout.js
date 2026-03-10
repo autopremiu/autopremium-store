@@ -1,10 +1,40 @@
 const express = require('express');
-const router = express.Router(); // <--- ESTO ES LO QUE TE FALTABA
-const { supabaseAdmin } = require('../config/supabase'); // Asegúrate de que la ruta a tu config sea correcta
-const { requireAuth } = require('../middleware/auth'); // Asegúrate de que la ruta a tu middleware sea correcta
+const router = express.Router();
+const { supabaseAdmin } = require('../config/supabase');
+const { requireAuth } = require('../middleware/auth');
 const crypto = require('crypto');
 
+
+// =============================
+// MOSTRAR CHECKOUT (DATOS ENVÍO)
+// =============================
+router.get('/', requireAuth, async (req, res) => {
+
+  const cart = req.session.cart;
+
+  if (!cart || cart.items.length === 0) {
+    return res.redirect('/cart');
+  }
+
+  const { data: addresses } = await supabaseAdmin
+    .from('addresses')
+    .select('*')
+    .eq('user_id', req.session.user.id);
+
+  res.render('shop/checkout', {
+    title: 'Finalizar Compra',
+    cart,
+    addresses: addresses || []
+  });
+
+});
+
+
+// =============================
+// CREAR ORDEN Y REDIRIGIR A WOMPI
+// =============================
 router.post('/create-order', requireAuth, async (req, res) => {
+
   const cart = req.session.cart;
 
   if (!cart || cart.items.length === 0) {
@@ -12,6 +42,7 @@ router.post('/create-order', requireAuth, async (req, res) => {
   }
 
   try {
+
     const FREE_SHIPPING_MIN = 150000;
     const SHIPPING_COST = 10000;
 
@@ -21,7 +52,6 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
     const referenceCode = `ORDER-${Date.now()}`;
 
-    // 1. Guardar en Supabase
     const { data: order, error } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -43,13 +73,8 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
     if (error) throw error;
 
-    // ==========================
-    // 🔹 CONFIGURACIÓN WOMPI
-    // ==========================
-
     const amountInCents = Math.round(total * 100);
 
-    // La firma de integridad es vital para que Wompi acepte el pago
     const integrityString = `${referenceCode}${amountInCents}COP${process.env.WOMPI_INTEGRITY_KEY}`;
 
     const integritySignature = crypto
@@ -75,7 +100,7 @@ router.post('/create-order', requireAuth, async (req, res) => {
       error: 'Error creando la orden'
     });
   }
+
 });
 
-// ¡MUY IMPORTANTE! Exportar el router para que server.js lo pueda usar
 module.exports = router;
