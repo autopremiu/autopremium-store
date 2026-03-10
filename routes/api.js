@@ -47,7 +47,13 @@ router.get('/wishlist', requireAuth, async (req, res) => {
 
 // Agregar o quitar de wishlist (toggle)
 router.post('/wishlist/toggle', requireAuth, async (req, res) => {
+
   const { product_id } = req.body;
+
+  if (!product_id) {
+    return res.status(400).json({ error: 'product_id requerido' });
+  }
+
   const user_id = req.session.user.id;
 
   const { data: existing } = await supabaseAdmin
@@ -55,15 +61,27 @@ router.post('/wishlist/toggle', requireAuth, async (req, res) => {
     .select('id')
     .eq('user_id', user_id)
     .eq('product_id', product_id)
-    .single();
+    .maybeSingle();
 
   if (existing) {
-    await supabaseAdmin.from('wishlists').delete().eq('id', existing.id);
-    res.json({ success: true, action: 'removed' });
+
+    await supabaseAdmin
+      .from('wishlists')
+      .delete()
+      .eq('id', existing.id);
+
+    return res.json({ success: true, action: 'removed' });
+
   } else {
-    await supabaseAdmin.from('wishlists').insert({ user_id, product_id });
-    res.json({ success: true, action: 'added' });
+
+    await supabaseAdmin
+      .from('wishlists')
+      .insert({ user_id, product_id });
+
+    return res.json({ success: true, action: 'added' });
+
   }
+
 });
 
 module.exports = router;
