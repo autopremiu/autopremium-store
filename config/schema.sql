@@ -247,16 +247,19 @@ ON CONFLICT (slug) DO NOTHING;
 -- SEED DATA - BRANDS
 -- ============================================
 INSERT INTO brands (name, slug) VALUES
-  ('Bosch', 'bosch'),
-  ('NGK', 'ngk'),
-  ('Gates', 'gates'),
-  ('Denso', 'denso'),
-  ('Monroe', 'monroe'),
-  ('Brembo', 'brembo'),
-  ('Mahle', 'mahle'),
-  ('SKF', 'skf'),
-  ('Valeo', 'valeo'),
-  ('Continental', 'continental')
+  ('Chevrolet', 'chevrolet'),
+  ('Renault', 'renault'),
+  ('Kia', 'kia'),
+  ('Mazda', 'mazda'),
+  ('Toyota', 'toyota'),
+  ('Nissan', 'nissan'),
+  ('Hyundai', 'hyundai'),
+  ('Volkswagen', 'volkswagen'),
+  ('Ford', 'ford'),
+  ('Suzuki', 'suzuki'),
+  ('Jeep', 'jeep'),
+  ('BMW', 'bmw'),
+  ('Mercedes-Benz', 'mercedes-benz')
 ON CONFLICT (slug) DO NOTHING;
 
 -- ============================================
