@@ -68,12 +68,13 @@
 
   <div class="nav-categories" id="navMenu">
     <div class="container">
-      <a href="/productos" class="<%= !filters || !filters.marca ? 'active' : '' %>">Todas las Marcas</a>
-      <% if (typeof brands !== 'undefined' && brands && brands.length > 0) { %>
-        <% brands.forEach(brand => { %>
-          <a href="/productos?marca=<%= brand.slug %>" class="<%= filters && filters.marca === brand.slug ? 'active' : '' %>"><%= brand.name %></a>
-        <% }) %>
-      <% } %>
+      <a href="/productos">Todos los Productos</a>
+      <a href="/productos?categoria=motor-transmision">Motor</a>
+      <a href="/productos?categoria=frenos-suspension">Frenos</a>
+      <a href="/productos?categoria=electrico-electronico">Eléctrico</a>
+      <a href="/productos?categoria=filtros-lubricantes">Filtros</a>
+      <a href="/productos?categoria=carroceria-exterior">Carrocería</a>
+      <a href="/productos?categoria=iluminacion">Iluminación</a>
     </div>
   </div>
 </nav>

@@ -44,13 +44,19 @@ app.use((req, res, next) => {
 // ============================================
 // ROUTES
 // ============================================
-app.use('/', require('./routes/shop'));
-app.use('/auth', require('./routes/auth'));
-app.use('/cart', require('./routes/cart'));
-app.use('/checkout', require('./routes/checkout'));
-app.use('/account', require('./routes/account'));
-app.use('/admin', require('./routes/admin'));
-app.use('/api', require('./routes/api'));
+console.log("🚀 Iniciando servidor...");
+
+try {
+  app.use('/', require('./routes/shop'));
+  app.use('/auth', require('./routes/auth'));
+  app.use('/cart', require('./routes/cart'));
+  app.use('/checkout', require('./routes/checkout'));
+  app.use('/account', require('./routes/account'));
+  app.use('/admin', require('./routes/admin'));
+  app.use('/api', require('./routes/api'));
+} catch (error) {
+  console.error("💥 ERROR CARGANDO RUTAS:", error);
+}
 
 // ============================================
 // ERROR HANDLING
