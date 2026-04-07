@@ -43,10 +43,13 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
   try {
 
-    // ✅ PRODUCTO + ENVÍO
-    const subtotal = Number(cart.subtotal) || 0;
-    const shipping_cost = 20000; // 👈 ENVÍO FIJO
-    const total = subtotal + shipping_cost; // 👈 TOTAL REAL
+    // ✅ RECALCULAR SUBTOTAL (SOLUCIÓN REAL)
+    const subtotal = cart.items.reduce((acc, item) => {
+      return acc + (item.price * item.quantity);
+    }, 0);
+
+    const shipping_cost = 20000;
+    const total = subtotal + shipping_cost;
 
     const referenceCode = `ORDER-${Date.now()}`;
 
@@ -66,7 +69,7 @@ router.post('/create-order', requireAuth, async (req, res) => {
         discount: 0,
         total: total,
         shipping_address: req.body.shipping_address,
-        notes: "Pago completo con envío incluido", // 👈 CORREGIDO
+        notes: "Pago completo con envío incluido",
         reference_code: referenceCode
       })
       .select()
@@ -86,7 +89,6 @@ router.post('/create-order', requireAuth, async (req, res) => {
       .update(integrityString)
       .digest("hex");
 
-    // ✅ URL SIN ERRORES (IMPORTANTE)
     const params = new URLSearchParams({
       'public-key': process.env.WOMPI_PUBLIC_KEY,
       currency: 'COP',
@@ -110,5 +112,4 @@ router.post('/create-order', requireAuth, async (req, res) => {
   }
 
 });
-
 module.exports = router;
