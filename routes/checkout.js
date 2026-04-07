@@ -43,10 +43,10 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
   try {
 
-    // ✅ SOLO PRODUCTO (ENVÍO NO SE COBRA AQUÍ)
-    const subtotal = Number(cart.subtotal);
-    const shipping_cost = 20000; // 👈 ENVÍO CONTRA ENTREGA
-    const total = subtotal;  // 👈 SOLO PRODUCTO
+    // ✅ PRODUCTO + ENVÍO
+    const subtotal = Number(cart.subtotal) || 0;
+    const shipping_cost = 20000; // 👈 ENVÍO FIJO
+    const total = subtotal + shipping_cost; // 👈 TOTAL REAL
 
     const referenceCode = `ORDER-${Date.now()}`;
 
@@ -66,7 +66,7 @@ router.post('/create-order', requireAuth, async (req, res) => {
         discount: 0,
         total: total,
         shipping_address: req.body.shipping_address,
-        notes: "Envío se paga contra entrega", // 👈 IMPORTANTE
+        notes: "Pago completo con envío incluido", // 👈 CORREGIDO
         reference_code: referenceCode
       })
       .select()
@@ -86,13 +86,17 @@ router.post('/create-order', requireAuth, async (req, res) => {
       .update(integrityString)
       .digest("hex");
 
-    const checkoutUrl =
-      `https://checkout.wompi.co/p/?public-key=${process.env.WOMPI_PUBLIC_KEY}` +
-      `&currency=COP` +
-      `&amount-in-cents=${amountInCents}` +
-      `&reference=${referenceCode}` +
-      `&signature:integrity=${integritySignature}` +
-      `&redirect-url=${process.env.BASE_URL}/checkout/confirmacion/${referenceCode}`;
+    // ✅ URL SIN ERRORES (IMPORTANTE)
+    const params = new URLSearchParams({
+      'public-key': process.env.WOMPI_PUBLIC_KEY,
+      currency: 'COP',
+      'amount-in-cents': amountInCents,
+      reference: referenceCode,
+      'signature:integrity': integritySignature,
+      'redirect-url': `${process.env.BASE_URL}/checkout/confirmacion/${referenceCode}`
+    });
+
+    const checkoutUrl = `https://checkout.wompi.co/p/?${params.toString()}`;
 
     res.json({
       checkout_url: checkoutUrl
