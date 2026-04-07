@@ -45,12 +45,18 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
     // ✅ RECALCULAR SUBTOTAL (SOLUCIÓN REAL)
     const subtotal = cart.items.reduce((acc, item) => {
-  return acc + (Number(item.price) * Number(item.quantity));
-}, 0);
+    return acc + (Number(item.price) * Number(item.quantity));
+    }, 0);
 
-const shipping_cost = 20000;
+    const shipping_cost = 20000;
 
-const total = Number(subtotal) + Number(shipping_cost);
+    // 👇 FORZAMOS NUMÉRICO REAL
+    const total = parseInt(subtotal) + parseInt(shipping_cost);
+
+    // 👇 VALIDACIÓN CRÍTICA
+    if (isNaN(total) || total <= 0) {
+      throw new Error('Total inválido');
+    }
 
     // =============================
     // GUARDAR ORDEN
