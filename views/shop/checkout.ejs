@@ -1,5 +1,14 @@
 <%- include('../partials/header') %>
 
+<%
+const subtotal = cart.items.reduce((acc, item) => {
+  return acc + (Number(item.price) * Number(item.quantity));
+}, 0);
+
+const shipping = 20000;
+const total = subtotal + shipping;
+%>
+
 <div class="container" style="padding-top:2rem;padding-bottom:3rem">
   <h1 class="page-title">Finalizar Compra</h1>
 
@@ -89,8 +98,9 @@
         <textarea id="orderNotes" rows="3"></textarea>
       </div>
 
+      <!-- BOTÓN CON TOTAL CORRECTO -->
       <button id="placeOrderBtn" class="btn btn-primary btn-lg" style="width:100%">
-        🔒 Confirmar Pedido — $<%= Number(cart.total).toLocaleString('es-CO') %>
+        🔒 Confirmar Pedido — $<%= total.toLocaleString('es-CO') %>
       </button>
 
       <p class="secure-msg">
@@ -101,7 +111,7 @@
 
     <!-- RIGHT -->
     <div class="order-summary">
-      <h3>Tu Pedido (<%= cart.count %>)</h3>
+      <h3>Tu Pedido (<%= cart.items.length %>)</h3>
 
       <% cart.items.forEach(item => { %>
         <div class="order-item">
@@ -115,30 +125,39 @@
       <% }) %>
 
       <div class="summary-lines">
+
+        <div class="summary-line">
+          <span>Subtotal</span>
+          <span>$<%= subtotal.toLocaleString('es-CO') %></span>
+        </div>
+
+        <div class="summary-line">
+          <span>Envío</span>
+          <span>$<%= shipping.toLocaleString('es-CO') %></span>
+        </div>
+
         <div class="summary-line total">
           <span>Total</span>
-          <span>$<%= Number(cart.total).toLocaleString('es-CO') %></span>
+          <span>$<%= total.toLocaleString('es-CO') %></span>
         </div>
+
       </div>
     </div>
   </div>
 </div>
-
-<button id="btn-pagar">Pagar con Wompi</button>
-
 
 <script>
 function fillAddress(val) {
   if (val === 'new') return;
   const a = JSON.parse(val);
 
-  document.getElementById('addrName').value = a.full_name || '';
-  document.getElementById('addrPhone').value = a.phone || '';
-  document.getElementById('addrLine1').value = a.address_line1 || '';
-  document.getElementById('addrLine2').value = a.address_line2 || '';
-  document.getElementById('addrCity').value = a.city || '';
-  document.getElementById('addrState').value = a.state || '';
-  document.getElementById('addrPostal').value = a.postal_code || '';
+  addrName.value = a.full_name || '';
+  addrPhone.value = a.phone || '';
+  addrLine1.value = a.address_line1 || '';
+  addrLine2.value = a.address_line2 || '';
+  addrCity.value = a.city || '';
+  addrState.value = a.state || '';
+  addrPostal.value = a.postal_code || '';
 }
 
 document.getElementById('placeOrderBtn').addEventListener('click', async () => {
