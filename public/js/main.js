@@ -136,3 +136,42 @@ document.addEventListener("click", async (e) => {
   }
 
 });
+
+
+async function pagarConWompi() {
+  try {
+
+    const res = await fetch("/checkout/create-order", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        shipping_address: document.getElementById("direccion").value,
+        notes: ""
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+
+    // 🔥 REDIRIGE A WOMPI
+    window.location.href = data.checkout_url;
+
+  } catch (error) {
+    console.error("Error:", error);
+    alert("Error procesando el pago");
+  }
+}
+
+// 🔘 Botón
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("btn-pagar");
+  if (btn) {
+    btn.addEventListener("click", pagarConWompi);
+  }
+});

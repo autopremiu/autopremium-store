@@ -1,14 +1,16 @@
 require('dotenv').config();
+
+const crypto = require('crypto');
 const express = require('express');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 
-const app = express();
-
+const app = express(); // 👈 ESTO VA ANTES DE USAR app
 // Trust proxy (necesario para Render)
 app.set('trust proxy', 1);
 
+console.log("WOMPI KEY:", process.env.WOMPI_PUBLIC_KEY);
 // ============================================
 // MIDDLEWARE
 // ============================================

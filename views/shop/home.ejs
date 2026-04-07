@@ -32,7 +32,6 @@
       <p>Más de 10,000 referencias disponibles. Marcas originales y alternativas para todos los vehículos.</p>
       <div class="hero-actions">
         <a href="/productos" class="btn btn-primary btn-lg">Ver Catálogo <i class="fas fa-arrow-right"></i></a>
-        <a href="#categorias" class="btn btn-outline btn-lg">Explorar Categorías</a>
       </div>
       <div class="hero-stats">
         <div><strong>10K+</strong><span>Referencias</span></div>
@@ -76,32 +75,8 @@
   </div>
 </section>
 
-<!-- CATEGORIES -->
-<section class="section" id="categorias">
-  <div class="container">
-    <div class="section-header">
-      <h2>Categorías</h2>
-      <a href="/productos" class="link-all">Ver todo <i class="fas fa-arrow-right"></i></a>
-    </div>
-    <div class="categories-grid">
-      <% (categories.length > 0 ? categories : [
-        {name:'Motor y Transmisión', slug:'motor-transmision',         icon:'⚙️'},
-        {name:'Frenos y Suspensión', slug:'frenos-suspension',         icon:'🔧'},
-        {name:'Eléctrico',           slug:'electrico-electronico',     icon:'⚡'},
-        {name:'Carrocería',          slug:'carroceria-exterior',       icon:'🚗'},
-        {name:'Filtros',             slug:'filtros-lubricantes',       icon:'🛢️'},
-        {name:'Iluminación',         slug:'iluminacion',               icon:'💡'},
-        {name:'Escape',              slug:'escape-admision',           icon:'💨'},
-        {name:'Interior',            slug:'interior-climatizacion',    icon:'❄️'}
-      ]).forEach(cat => { %>
-      <a href="/productos?categoria=<%= cat.slug %>" class="category-card">
-        <div class="cat-icon"><%= cat.icon || '🔧' %></div>
-        <div class="cat-name"><%= cat.name %></div>
-      </a>
-      <% }) %>
-    </div>
-  </div>
-</section>
+
+
 
 <!-- FEATURED PRODUCTS -->
 <section class="section section-dark">

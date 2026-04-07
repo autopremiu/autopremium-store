@@ -6,7 +6,7 @@ const crypto = require('crypto');
 
 
 // =============================
-// MOSTRAR CHECKOUT (DATOS ENVÍO)
+// MOSTRAR CHECKOUT
 // =============================
 router.get('/', requireAuth, async (req, res) => {
 
@@ -31,7 +31,7 @@ router.get('/', requireAuth, async (req, res) => {
 
 
 // =============================
-// CREAR ORDEN Y REDIRIGIR A WOMPI
+// CREAR ORDEN + WOMPI
 // =============================
 router.post('/create-order', requireAuth, async (req, res) => {
 
@@ -43,15 +43,16 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
   try {
 
-    const FREE_SHIPPING_MIN = 150000;
-    const SHIPPING_COST = 10000;
-
+    // ✅ SOLO PRODUCTO (ENVÍO NO SE COBRA AQUÍ)
     const subtotal = Number(cart.subtotal);
-    const shipping_cost = subtotal >= FREE_SHIPPING_MIN ? 0 : SHIPPING_COST;
-    const total = subtotal + shipping_cost;
+    const shipping_cost = 0; // 👈 ENVÍO CONTRA ENTREGA
+    const total = subtotal;  // 👈 SOLO PRODUCTO
 
     const referenceCode = `ORDER-${Date.now()}`;
 
+    // =============================
+    // GUARDAR ORDEN
+    // =============================
     const { data: order, error } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -65,7 +66,7 @@ router.post('/create-order', requireAuth, async (req, res) => {
         discount: 0,
         total: total,
         shipping_address: req.body.shipping_address,
-        notes: req.body.notes,
+        notes: "Envío se paga contra entrega", // 👈 IMPORTANTE
         reference_code: referenceCode
       })
       .select()
@@ -73,6 +74,9 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
     if (error) throw error;
 
+    // =============================
+    // WOMPI
+    // =============================
     const amountInCents = Math.round(total * 100);
 
     const integrityString = `${referenceCode}${amountInCents}COP${process.env.WOMPI_INTEGRITY_KEY}`;

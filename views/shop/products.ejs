@@ -33,19 +33,7 @@
         <form action="/productos" method="GET" id="filterForm">
           <% if (filters.q) { %><input type="hidden" name="q" value="<%= filters.q %>"><% } %>
 
-          <div class="filter-group">
-            <h4>Categorías</h4>
-            <label class="filter-check">
-              <input type="radio" name="categoria" value="" <%= !filters.categoria ? 'checked' : '' %> onchange="this.form.submit()">
-              <span>Todas</span>
-            </label>
-            <% categories.forEach(cat => { %>
-            <label class="filter-check">
-              <input type="radio" name="categoria" value="<%= cat.slug %>" <%= filters.categoria === cat.slug ? 'checked' : '' %> onchange="this.form.submit()">
-              <span><%= cat.name %></span>
-            </label>
-            <% }) %>
-          </div>
+          
 
           <div class="filter-group">
             <h4>Marcas</h4>
@@ -79,15 +67,7 @@
     <!-- ÁREA DE PRODUCTOS -->
     <div class="catalog-main">
 
-      <!-- BOTÓN FILTROS — solo visible en mobile (el CSS lo muestra/oculta) -->
-      <button class="filter-trigger" id="filterTrigger" onclick="openFilters()">
-        <i class="fas fa-sliders-h"></i>
-        Filtros
-        <% const activeFilters = (filters.categoria ? 1 : 0) + (filters.marca ? 1 : 0) + (filters.min || filters.max ? 1 : 0) %>
-        <% if (activeFilters > 0) { %>
-        <span class="filter-count"><%= activeFilters %></span>
-        <% } %>
-      </button>
+      
 
       <div class="catalog-toolbar">
         <div class="results-count"><%= total %> productos encontrados</div>
