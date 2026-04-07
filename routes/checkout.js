@@ -30,6 +30,8 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 
+console.log("🚨 CREATE ORDER EJECUTÁNDOSE");
+
 // =============================
 // CREAR ORDEN + WOMPI
 // =============================
