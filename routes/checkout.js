@@ -94,7 +94,6 @@ console.log("TOTAL FINAL:", {
     // =============================
     // WOMPI
     // =============================
-    const amountInCents = Math.round(total * 100);
 
     const integrityString = `${referenceCode}${amountInCents}COP${process.env.WOMPI_INTEGRITY_KEY}`;
 
