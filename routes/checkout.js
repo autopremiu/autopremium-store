@@ -45,7 +45,7 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
     // ✅ SOLO PRODUCTO (ENVÍO NO SE COBRA AQUÍ)
     const subtotal = Number(cart.subtotal);
-    const shipping_cost = 0; // 👈 ENVÍO CONTRA ENTREGA
+    const shipping_cost = 20000; // 👈 ENVÍO CONTRA ENTREGA
     const total = subtotal;  // 👈 SOLO PRODUCTO
 
     const referenceCode = `ORDER-${Date.now()}`;
