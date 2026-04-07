@@ -100,6 +100,15 @@ router.post('/create-order', requireAuth, async (req, res) => {
       'redirect-url': `${process.env.BASE_URL}/checkout/confirmacion/${referenceCode}`
     });
 
+
+    console.log("🧪 DEBUG WOMPI:", {
+    subtotal,
+    shipping_cost,
+    total,
+    amountInCents: Math.round(total * 100)
+  });
+
+
     const checkoutUrl = `https://checkout.wompi.co/p/?${params.toString()}`;
 
     res.json({
