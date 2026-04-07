@@ -43,33 +43,15 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
   try {
 
-    // 🔥 SUMA REAL DESDE LOS PRODUCTOS (SIN CONFIAR EN NADA)
-let subtotal = 0;
+    const FREE_SHIPPING_MIN = 150000;
+    const SHIPPING_COST = 10000;
 
-for (const item of cart.items) {
-  subtotal += Number(item.price) * Number(item.quantity);
-}
+    const subtotal = Number(cart.subtotal);
+    const shipping_cost = subtotal >= FREE_SHIPPING_MIN ? 0 : SHIPPING_COST;
+    const total = subtotal + shipping_cost;
 
-// 👇 ENVÍO FIJO
-const shipping_cost = 20000;
+    const referenceCode = `ORDER-${Date.now()}`;
 
-// 👇 TOTAL FINAL SIEMPRE CORRECTO
-const total = subtotal + shipping_cost;
-
-// 👇 ESTO ES LO QUE COBRA WOMPI
-const amountInCents = total * 100;
-
-// 🔍 DEBUG (déjalo por ahora)
-console.log("TOTAL FINAL:", {
-  subtotal,
-  shipping_cost,
-  total,
-  amountInCents
-});
-
-    // =============================
-    // GUARDAR ORDEN
-    // =============================
     const { data: order, error } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -83,7 +65,7 @@ console.log("TOTAL FINAL:", {
         discount: 0,
         total: total,
         shipping_address: req.body.shipping_address,
-        notes: "Pago completo con envío incluido",
+        notes: req.body.notes,
         reference_code: referenceCode
       })
       .select()
@@ -91,9 +73,7 @@ console.log("TOTAL FINAL:", {
 
     if (error) throw error;
 
-    // =============================
-    // WOMPI
-    // =============================
+    const amountInCents = Math.round(total * 100);
 
     const integrityString = `${referenceCode}${amountInCents}COP${process.env.WOMPI_INTEGRITY_KEY}`;
 
@@ -102,16 +82,13 @@ console.log("TOTAL FINAL:", {
       .update(integrityString)
       .digest("hex");
 
-    const params = new URLSearchParams({
-      'public-key': process.env.WOMPI_PUBLIC_KEY,
-      currency: 'COP',
-      'amount-in-cents': amountInCents,
-      reference: referenceCode,
-      'signature:integrity': integritySignature,
-      'redirect-url': `${process.env.BASE_URL}/checkout/confirmacion/${referenceCode}`
-    });
-
-    const checkoutUrl = `https://checkout.wompi.co/p/?${params.toString()}`;
+    const checkoutUrl =
+      `https://checkout.wompi.co/p/?public-key=${process.env.WOMPI_PUBLIC_KEY}` +
+      `&currency=COP` +
+      `&amount-in-cents=${amountInCents}` +
+      `&reference=${referenceCode}` +
+      `&signature:integrity=${integritySignature}` +
+      `&redirect-url=${process.env.BASE_URL}/checkout/confirmacion/${referenceCode}`;
 
     res.json({
       checkout_url: checkoutUrl
