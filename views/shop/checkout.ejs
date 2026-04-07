@@ -117,7 +117,15 @@
       <div class="summary-lines">
         <div class="summary-line total">
           <span>Total</span>
-          <span>$<%= Number(cart.total).toLocaleString('es-CO') %></span>
+          <span><%
+          const subtotal = cart.items.reduce((acc, item) => {
+            return acc + (item.price * item.quantity);
+          }, 0);
+
+          const total = subtotal + 20000;
+          %>
+
+          $<%= total.toLocaleString('es-CO') %></span>
         </div>
       </div>
     </div>

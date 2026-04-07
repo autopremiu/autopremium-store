@@ -32,6 +32,7 @@ router.get('/', requireAuth, async (req, res) => {
 
 // =============================
 // CREAR ORDEN + WOMPI
+// =============================
 router.post('/create-order', requireAuth, async (req, res) => {
 
   const cart = req.session.cart;
@@ -42,15 +43,18 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
   try {
 
-    const FREE_SHIPPING_MIN = 150000;
-    const SHIPPING_COST = 10000;
-
-    const subtotal = Number(cart.subtotal);
-    const shipping_cost = subtotal >= FREE_SHIPPING_MIN ? 0 : SHIPPING_COST;
-    const total = subtotal + shipping_cost;
+    // ✅ PRODUCTO + ENVÍO
+    const subtotal = cart.items.reduce((acc, item) => {
+      return acc + (Number(item.price) * Number(item.quantity));
+    }, 0);
+    const shipping_cost = 20000; // 👈 ENVÍO FIJO
+    const total = subtotal + shipping_cost; // 👈 TOTAL REAL
 
     const referenceCode = `ORDER-${Date.now()}`;
 
+    // =============================
+    // GUARDAR ORDEN
+    // =============================
     const { data: order, error } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -64,15 +68,18 @@ router.post('/create-order', requireAuth, async (req, res) => {
         discount: 0,
         total: total,
         shipping_address: req.body.shipping_address,
-        notes: req.body.notes,
+        notes: "Pago completo con envío incluido", // 👈 CORREGIDO
         reference_code: referenceCode
       })
       .select()
       .single();
 
+    if (error) throw error;
+
     // =============================
     // WOMPI
     // =============================
+    const amountInCents = Math.round(total * 100);
 
     const integrityString = `${referenceCode}${amountInCents}COP${process.env.WOMPI_INTEGRITY_KEY}`;
 
@@ -81,6 +88,7 @@ router.post('/create-order', requireAuth, async (req, res) => {
       .update(integrityString)
       .digest("hex");
 
+    // ✅ URL SIN ERRORES (IMPORTANTE)
     const params = new URLSearchParams({
       'public-key': process.env.WOMPI_PUBLIC_KEY,
       currency: 'COP',
@@ -104,4 +112,5 @@ router.post('/create-order', requireAuth, async (req, res) => {
   }
 
 });
+
 module.exports = router;
