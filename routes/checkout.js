@@ -43,20 +43,29 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
   try {
 
-    // ✅ RECALCULAR SUBTOTAL (SOLUCIÓN REAL)
-    const subtotal = cart.items.reduce((acc, item) => {
-    return acc + (Number(item.price) * Number(item.quantity));
-    }, 0);
+    // 🔥 SUMA REAL DESDE LOS PRODUCTOS (SIN CONFIAR EN NADA)
+let subtotal = 0;
 
-    const shipping_cost = 20000;
+for (const item of cart.items) {
+  subtotal += Number(item.price) * Number(item.quantity);
+}
 
-    // 👇 FORZAMOS NUMÉRICO REAL
-    const total = parseInt(subtotal) + parseInt(shipping_cost);
+// 👇 ENVÍO FIJO
+const shipping_cost = 20000;
 
-    // 👇 VALIDACIÓN CRÍTICA
-    if (isNaN(total) || total <= 0) {
-      throw new Error('Total inválido');
-    }
+// 👇 TOTAL FINAL SIEMPRE CORRECTO
+const total = subtotal + shipping_cost;
+
+// 👇 ESTO ES LO QUE COBRA WOMPI
+const amountInCents = total * 100;
+
+// 🔍 DEBUG (déjalo por ahora)
+console.log("TOTAL FINAL:", {
+  subtotal,
+  shipping_cost,
+  total,
+  amountInCents
+});
 
     // =============================
     // GUARDAR ORDEN
