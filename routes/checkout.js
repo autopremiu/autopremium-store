@@ -32,7 +32,6 @@ router.get('/', requireAuth, async (req, res) => {
 
 // =============================
 // CREAR ORDEN + WOMPI
-// =============================
 router.post('/create-order', requireAuth, async (req, res) => {
 
   const cart = req.session.cart;
@@ -71,9 +70,9 @@ router.post('/create-order', requireAuth, async (req, res) => {
       .select()
       .single();
 
-    if (error) throw error;
-
-    const amountInCents = Math.round(total * 100);
+    // =============================
+    // WOMPI
+    // =============================
 
     const integrityString = `${referenceCode}${amountInCents}COP${process.env.WOMPI_INTEGRITY_KEY}`;
 
@@ -82,13 +81,16 @@ router.post('/create-order', requireAuth, async (req, res) => {
       .update(integrityString)
       .digest("hex");
 
-    const checkoutUrl =
-      `https://checkout.wompi.co/p/?public-key=${process.env.WOMPI_PUBLIC_KEY}` +
-      `&currency=COP` +
-      `&amount-in-cents=${amountInCents}` +
-      `&reference=${referenceCode}` +
-      `&signature:integrity=${integritySignature}` +
-      `&redirect-url=${process.env.BASE_URL}/checkout/confirmacion/${referenceCode}`;
+    const params = new URLSearchParams({
+      'public-key': process.env.WOMPI_PUBLIC_KEY,
+      currency: 'COP',
+      'amount-in-cents': amountInCents,
+      reference: referenceCode,
+      'signature:integrity': integritySignature,
+      'redirect-url': `${process.env.BASE_URL}/checkout/confirmacion/${referenceCode}`
+    });
+
+    const checkoutUrl = `https://checkout.wompi.co/p/?${params.toString()}`;
 
     res.json({
       checkout_url: checkoutUrl
