@@ -6,6 +6,19 @@ const { upload, cloudinary } = require('../config/cloudinary');
 
 router.use(requireAdmin);
 
+// Helper: genera slug limpio manejando tildes y caracteres especiales del español
+function generateSlug(name) {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')   // elimina tildes
+    .replace(/ñ/g, 'n')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+
+
 // Dashboard
 router.get('/', async (req, res) => {
   const [ordersRes, productsRes, usersRes, revenueRes, monthlyRes] = await Promise.all([
@@ -42,7 +55,7 @@ router.get('/productos/nuevo', async (req, res) => {
 
 router.post('/productos/nuevo', upload.array('product_images', 5), async (req, res) => {
   const { name, description, short_description, price, compare_price, stock, sku, category_id, brand_id, is_active, is_featured, thumbnail_url } = req.body;
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now();
+  const slug = generateSlug(name) + '-' + Date.now();
   
   let images = [];
   let thumbnail = thumbnail_url || '';
@@ -80,7 +93,8 @@ router.get('/productos/:id/editar', async (req, res) => {
 router.post('/productos/:id/editar', upload.array('product_images', 5), async (req, res) => {
   const { name, description, short_description, price, compare_price, stock, sku, category_id, brand_id, is_active, is_featured, thumbnail_url } = req.body;
   
-  let updates = { name, description, short_description, price: parseFloat(price), compare_price: compare_price ? parseFloat(compare_price) : null, stock: parseInt(stock), sku, category_id: category_id || null, brand_id: brand_id || null, is_active: is_active === 'on', is_featured: is_featured === 'on' };
+  const slug = generateSlug(name) + '-' + Date.now();
+  let updates = { name, slug, description, short_description, price: parseFloat(price), compare_price: compare_price ? parseFloat(compare_price) : null, stock: parseInt(stock), sku, category_id: category_id || null, brand_id: brand_id || null, is_active: is_active === 'on', is_featured: is_featured === 'on' };
 
   if (req.files && req.files.length > 0) {
     updates.images = req.files.filter(f => f.path).map(f => f.path);

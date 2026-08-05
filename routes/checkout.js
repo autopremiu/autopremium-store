@@ -4,7 +4,6 @@ const { supabaseAdmin } = require('../config/supabase');
 const { requireAuth } = require('../middleware/auth');
 const crypto = require('crypto');
 
-
 // =============================
 // MOSTRAR CHECKOUT
 // =============================
@@ -29,7 +28,6 @@ router.get('/', requireAuth, async (req, res) => {
 
 });
 
-
 console.log("🚨 CREATE ORDER EJECUTÁNDOSE");
 
 // =============================
@@ -45,38 +43,84 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
   try {
 
-    // ✅ PRODUCTO + ENVÍO
+    // =============================
+    // CALCULAR TOTALES
+    // =============================
     const subtotal = cart.items.reduce((acc, item) => {
       return acc + (Number(item.price) * Number(item.quantity));
     }, 0);
-    const shipping_cost = 20000; // 👈 ENVÍO FIJO
-    const total = subtotal + shipping_cost; // 👈 TOTAL REAL
+
+    const shipping_cost = 20000;
+    const total = subtotal + shipping_cost;
 
     const referenceCode = `ORDER-${Date.now()}`;
 
     // =============================
-    // GUARDAR ORDEN
+    // CREAR ORDEN
     // =============================
-    const { data: order, error } = await supabaseAdmin
+    const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
         user_id: req.session.user.id,
         status: 'pending',
         payment_status: 'pending',
         payment_method: 'wompi',
-        subtotal: subtotal,
-        shipping_cost: shipping_cost,
+        subtotal,
+        shipping_cost,
         tax: 0,
         discount: 0,
-        total: total,
+        total,
         shipping_address: req.body.shipping_address,
-        notes: "Pago completo con envío incluido", // 👈 CORREGIDO
+        notes: "Pago completo con envío incluido",
         reference_code: referenceCode
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (orderError) throw orderError;
+
+    // =============================
+    // GUARDAR ITEMS (DESDE BD 🔥)
+    // =============================
+   const orderItems = [];
+
+for (const item of cart.items) {
+
+  console.log("🛒 ITEM:", item);
+
+  const { data: product, error: productError } = await supabaseAdmin
+    .from('products')
+    .select('id, name, sku, price')
+    .eq('id', item.id)
+    .single();
+
+  console.log("📦 PRODUCTO:", product);
+
+  if (productError || !product) {
+    console.error("❌ Error producto:", productError);
+    continue;
+  }
+
+  orderItems.push({
+    order_id: order.id,
+    product_id: product.id,
+    location: product.location,
+    product_name: product.name,
+    quantity: item.quantity,
+    unit_price: product.price,
+    total_price: product.price * item.quantity
+  });
+}
+
+    const { error: itemsError } = await supabaseAdmin
+      .from('order_items')
+      .insert(orderItems);
+
+    if (itemsError) {
+      console.error("❌ ERROR order_items:", itemsError);
+    } else {
+      console.log("✅ order_items guardados correctamente");
+    }
 
     // =============================
     // WOMPI
@@ -90,7 +134,6 @@ router.post('/create-order', requireAuth, async (req, res) => {
       .update(integrityString)
       .digest("hex");
 
-    // ✅ URL SIN ERRORES (IMPORTANTE)
     const params = new URLSearchParams({
       'public-key': process.env.WOMPI_PUBLIC_KEY,
       currency: 'COP',
@@ -100,14 +143,12 @@ router.post('/create-order', requireAuth, async (req, res) => {
       'redirect-url': `${process.env.BASE_URL}/checkout/confirmacion/${referenceCode}`
     });
 
-
     console.log("🧪 DEBUG WOMPI:", {
-    subtotal,
-    shipping_cost,
-    total,
-    amountInCents: Math.round(total * 100)
-  });
-
+      subtotal,
+      shipping_cost,
+      total,
+      amountInCents
+    });
 
     const checkoutUrl = `https://checkout.wompi.co/p/?${params.toString()}`;
 

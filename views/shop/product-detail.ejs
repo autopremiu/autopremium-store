@@ -75,8 +75,8 @@
           <input type="number" value="1" min="1" max="<%= product.stock %>" id="qty">
           <button type="button" onclick="changeQty(1)">+</button>
         </div>
-        <button class="btn btn-primary btn-lg btn-add-cart" data-id="<%= product.id %>" data-name="<%= product.name %>" id="addCartBtn" <%= product.stock < 1 ? 'disabled' : '' %>>
-          <i class="fas fa-cart-plus"></i> Agregar al Carrito
+        <button class="btn btn-primary btn-lg btn-whatsapp-product" id="addCartBtn" <%= product.stock < 1 ? 'disabled' : '' %>>
+          <i class="fab fa-whatsapp"></i> Cotizar por WhatsApp
         </button>
       </div>
 
@@ -150,19 +150,12 @@ function showTab(tabId, btn) {
   btn.classList.add('active');
 }
 
-// Override add to cart for this page to use quantity
+// TEMPORAL: en vez de agregar al carrito, redirige a WhatsApp con el producto y cantidad
 document.getElementById('addCartBtn').addEventListener('click', function() {
   const qty = document.getElementById('qty').value;
-  fetch('/cart/agregar', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ product_id: '<%= product.id %>', quantity: qty })
-  }).then(r => r.json()).then(data => {
-    if (data.success) {
-      document.getElementById('cartCount').textContent = data.cart.count;
-      showCartNotification(data.message);
-    }
-  });
+  const numero = '<%= process.env.WHATSAPP_NUMBER || "3152411837" %>';
+  const mensaje = 'Hola, quiero cotizar este producto: <%= product.name %> - $<%= Number(product.price).toLocaleString("es-CO") %> (Cantidad: ' + qty + ')\n' + window.location.href;
+  window.open('https://wa.me/57' + numero + '?text=' + encodeURIComponent(mensaje), '_blank');
 });
 </script>
 

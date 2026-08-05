@@ -28,9 +28,13 @@
     </div>
   </a>
   <div class="product-actions">
-    <button class="btn btn-primary btn-add-cart" data-id="<%= product.id %>" data-name="<%= product.name %>">
-      <i class="fas fa-cart-plus"></i> Agregar
-    </button>
+    <a
+      class="btn btn-primary btn-whatsapp-product"
+      href="https://wa.me/57<%= process.env.WHATSAPP_NUMBER || '3152411837' %>?text=<%= encodeURIComponent('Hola, quiero cotizar este producto: ' + product.name + ' - $' + Number(product.price).toLocaleString('es-CO') + '\n' + (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/producto/' + product.slug) %>"
+      target="_blank" rel="noopener"
+    >
+      <i class="fab fa-whatsapp"></i> Cotizar
+    </a>
     <button class="btn btn-icon-sm btn-wishlist" data-id="<%= product.id %>" title="Agregar a favoritos">
       <i class="far fa-heart"></i>
     </button>

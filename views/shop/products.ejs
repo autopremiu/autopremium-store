@@ -34,26 +34,12 @@
           <% if (filters.q) { %><input type="hidden" name="q" value="<%= filters.q %>"><% } %>
 
           <div class="filter-group">
-            <h4>Categorías</h4>
-            <label class="filter-check">
-              <input type="radio" name="categoria" value="" <%= !filters.categoria ? 'checked' : '' %> onchange="this.form.submit()">
-              <span>Todas</span>
-            </label>
-            <% categories.forEach(cat => { %>
-            <label class="filter-check">
-              <input type="radio" name="categoria" value="<%= cat.slug %>" <%= filters.categoria === cat.slug ? 'checked' : '' %> onchange="this.form.submit()">
-              <span><%= cat.name %></span>
-            </label>
-            <% }) %>
-          </div>
-
-          <div class="filter-group">
             <h4>Marcas</h4>
             <label class="filter-check">
               <input type="radio" name="marca" value="" <%= !filters.marca ? 'checked' : '' %> onchange="this.form.submit()">
               <span>Todas</span>
             </label>
-            <% brands.slice(0,8).forEach(brand => { %>
+            <% brands.forEach(brand => { %>
             <label class="filter-check">
               <input type="radio" name="marca" value="<%= brand.slug %>" <%= filters.marca === brand.slug ? 'checked' : '' %> onchange="this.form.submit()">
               <span><%= brand.name %></span>
@@ -83,7 +69,7 @@
       <button class="filter-trigger" id="filterTrigger" onclick="openFilters()">
         <i class="fas fa-sliders-h"></i>
         Filtros
-        <% const activeFilters = (filters.categoria ? 1 : 0) + (filters.marca ? 1 : 0) + (filters.min || filters.max ? 1 : 0) %>
+        <% const activeFilters = (filters.marca ? 1 : 0) + (filters.min || filters.max ? 1 : 0) %>
         <% if (activeFilters > 0) { %>
         <span class="filter-count"><%= activeFilters %></span>
         <% } %>
@@ -114,15 +100,40 @@
 
       <!-- PAGINACIÓN -->
       <% if (totalPages > 1) { %>
+      <%
+        function pageUrl(p) {
+          const params = new URLSearchParams();
+          if (filters.q)       params.set('q',       filters.q);
+          if (filters.categoria) params.set('categoria', filters.categoria);
+          if (filters.marca)   params.set('marca',   filters.marca);
+          if (filters.min)     params.set('min',     filters.min);
+          if (filters.max)     params.set('max',     filters.max);
+          if (filters.orden)   params.set('orden',   filters.orden);
+          params.set('page', p);
+          return '?' + params.toString();
+        }
+        const maxVisible = 5;
+        let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
+        let endPage   = Math.min(totalPages, startPage + maxVisible - 1);
+        if (endPage - startPage + 1 < maxVisible) startPage = Math.max(1, endPage - maxVisible + 1);
+      %>
       <div class="pagination">
         <% if (page > 1) { %>
-          <a href="?page=<%= page-1 %>" class="page-btn"><i class="fas fa-chevron-left"></i></a>
+          <a href="<%= pageUrl(page - 1) %>" class="page-btn"><i class="fas fa-chevron-left"></i></a>
         <% } %>
-        <% for(let i = 1; i <= totalPages; i++) { %>
-          <a href="?page=<%= i %>" class="page-btn <%= i === page ? 'active' : '' %>"><%= i %></a>
+        <% if (startPage > 1) { %>
+          <a href="<%= pageUrl(1) %>" class="page-btn">1</a>
+          <% if (startPage > 2) { %><span class="page-btn page-dots">…</span><% } %>
+        <% } %>
+        <% for(let i = startPage; i <= endPage; i++) { %>
+          <a href="<%= pageUrl(i) %>" class="page-btn <%= i === page ? 'active' : '' %>"><%= i %></a>
+        <% } %>
+        <% if (endPage < totalPages) { %>
+          <% if (endPage < totalPages - 1) { %><span class="page-btn page-dots">…</span><% } %>
+          <a href="<%= pageUrl(totalPages) %>" class="page-btn"><%= totalPages %></a>
         <% } %>
         <% if (page < totalPages) { %>
-          <a href="?page=<%= page+1 %>" class="page-btn"><i class="fas fa-chevron-right"></i></a>
+          <a href="<%= pageUrl(page + 1) %>" class="page-btn"><i class="fas fa-chevron-right"></i></a>
         <% } %>
       </div>
       <% } %>

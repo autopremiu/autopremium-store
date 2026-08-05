@@ -1,4 +1,4 @@
-app = "autopremium-crm"
+app = "autopremium-store"
 primary_region = "gru"
 
 [build]

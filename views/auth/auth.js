@@ -4,7 +4,6 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { supabaseAdmin } = require('../config/supabase');
 const { redirectIfAuth } = require('../middleware/auth');
-const { sendPasswordResetEmail } = require('../config/email');
 
 // GET Login
 router.get('/login', redirectIfAuth, (req, res) => {
@@ -84,16 +83,16 @@ router.post('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/'));
 });
 
-// ============================================
-// RECUPERACIÓN DE CONTRASEÑA
-// ============================================
+// =============================
+// RECUPERAR CONTRASEÑA
+// =============================
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// GET - Formulario para ingresar email
-router.get('/recuperar', redirectIfAuth, (req, res) => {
-  res.render('auth/forgot-password', { title: 'Recuperar Contraseña', error: null, success: null });
+router.get('/recuperar', (req, res) => {
+  res.render('auth/forgot-password', { title: 'Recuperar Contrasena', error: null, success: null });
 });
 
-// POST - Enviar email con enlace de recuperación
 router.post('/recuperar', async (req, res) => {
   const { email } = req.body;
   try {
@@ -104,122 +103,102 @@ router.post('/recuperar', async (req, res) => {
       .eq('is_active', true)
       .single();
 
-    // Siempre mostrar el mismo mensaje por seguridad (no revelar si el email existe)
-    const successMsg = 'Si ese email está registrado, recibirás un enlace para restablecer tu contraseña.';
+    const successMsg = 'Si ese email esta registrado, recibiras un enlace en unos minutos.';
 
     if (!user) {
-      return res.render('auth/forgot-password', { title: 'Recuperar Contraseña', error: null, success: successMsg });
+      return res.render('auth/forgot-password', { title: 'Recuperar Contrasena', error: null, success: successMsg });
     }
 
-    // Generar token seguro
     const token = crypto.randomBytes(32).toString('hex');
-    const expires_at = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+    const expires = new Date(Date.now() + 60 * 60 * 1000);
 
-    // Borrar tokens anteriores del mismo email y guardar el nuevo
-    await supabaseAdmin.from('password_resets').delete().eq('email', email.toLowerCase());
-    await supabaseAdmin.from('password_resets').insert({
-      email: email.toLowerCase(),
-      token,
-      expires_at: expires_at.toISOString()
+    await supabaseAdmin.from('users').update({
+      reset_token: token,
+      reset_token_expires: expires.toISOString()
+    }).eq('id', user.id);
+
+    const resetUrl = `${process.env.BASE_URL}/auth/reset/${token}`;
+
+    await resend.emails.send({
+      from: 'Auto Premium Service <onboarding@resend.dev>',
+      to: user.email,
+      subject: 'Recuperar contrasena - Auto Premium Service',
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
+          <h2 style="color:#e63946">Auto Premium Service</h2>
+          <p>Hola ${user.full_name},</p>
+          <p>Recibimos una solicitud para restablecer tu contrasena. Haz clic en el boton para continuar:</p>
+          <a href="${resetUrl}" style="display:inline-block;background:#e63946;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:bold;margin:1rem 0">
+            Restablecer contrasena
+          </a>
+          <p style="color:#888;font-size:0.85rem">Este enlace expira en 1 hora. Si no solicitaste esto, ignora este mensaje.</p>
+        </div>
+      `
     });
 
-    // Enviar email
-    const resetUrl = `${process.env.APP_URL}/auth/reset/${token}`;
-    await sendPasswordResetEmail(user, resetUrl);
-
-    res.render('auth/forgot-password', { title: 'Recuperar Contraseña', error: null, success: successMsg });
+    res.render('auth/forgot-password', { title: 'Recuperar Contrasena', error: null, success: successMsg });
   } catch (err) {
-    console.error('RESET ERROR:', err);
-    res.render('auth/forgot-password', { title: 'Recuperar Contraseña', error: 'Error interno. Intenta de nuevo.', success: null });
+    console.error('Recuperar error:', err);
+    res.render('auth/forgot-password', { title: 'Recuperar Contrasena', error: 'Error al procesar la solicitud.', success: null });
   }
 });
 
-// GET - Formulario para ingresar nueva contraseña
-router.get('/reset/:token', redirectIfAuth, async (req, res) => {
+// =============================
+// RESET CONTRASENA
+// =============================
+router.get('/reset/:token', async (req, res) => {
   const { token } = req.params;
   try {
-    const { data: reset } = await supabaseAdmin
-      .from('password_resets')
-      .select('*')
-      .eq('token', token)
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('id, reset_token_expires')
+      .eq('reset_token', token)
       .single();
 
-    if (!reset || new Date(reset.expires_at) < new Date()) {
-      return res.render('auth/reset-password', {
-        title: 'Restablecer Contraseña',
-        token: null,
-        error: 'El enlace es inválido o ha expirado. Solicita uno nuevo.',
-        success: null
-      });
+    if (!user || new Date(user.reset_token_expires) < new Date()) {
+      return res.render('auth/reset-password', { title: 'Nueva Contrasena', error: 'El enlace es invalido o ha expirado.', success: null, token: null });
     }
 
-    res.render('auth/reset-password', { title: 'Restablecer Contraseña', token, error: null, success: null });
+    res.render('auth/reset-password', { title: 'Nueva Contrasena', error: null, success: null, token });
   } catch (err) {
-    console.error(err);
-    res.render('auth/reset-password', { title: 'Restablecer Contraseña', token: null, error: 'Error interno.', success: null });
+    res.render('auth/reset-password', { title: 'Nueva Contrasena', error: 'Enlace invalido.', success: null, token: null });
   }
 });
 
-// POST - Guardar nueva contraseña
 router.post('/reset/:token', async (req, res) => {
   const { token } = req.params;
   const { password, confirm_password } = req.body;
 
   if (password !== confirm_password) {
-    return res.render('auth/reset-password', {
-      title: 'Restablecer Contraseña',
-      token,
-      error: 'Las contraseñas no coinciden.',
-      success: null
-    });
+    return res.render('auth/reset-password', { title: 'Nueva Contrasena', error: 'Las contrasenas no coinciden.', success: null, token });
   }
-
   if (password.length < 6) {
-    return res.render('auth/reset-password', {
-      title: 'Restablecer Contraseña',
-      token,
-      error: 'La contraseña debe tener al menos 6 caracteres.',
-      success: null
-    });
+    return res.render('auth/reset-password', { title: 'Nueva Contrasena', error: 'La contrasena debe tener al menos 6 caracteres.', success: null, token });
   }
 
   try {
-    const { data: reset } = await supabaseAdmin
-      .from('password_resets')
-      .select('*')
-      .eq('token', token)
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('id, reset_token_expires')
+      .eq('reset_token', token)
       .single();
 
-    if (!reset || new Date(reset.expires_at) < new Date()) {
-      return res.render('auth/reset-password', {
-        title: 'Restablecer Contraseña',
-        token: null,
-        error: 'El enlace es inválido o ha expirado. Solicita uno nuevo.',
-        success: null
-      });
+    if (!user || new Date(user.reset_token_expires) < new Date()) {
+      return res.render('auth/reset-password', { title: 'Nueva Contrasena', error: 'El enlace es invalido o ha expirado.', success: null, token: null });
     }
 
-    // Actualizar contraseña
     const password_hash = await bcrypt.hash(password, 12);
-    await supabaseAdmin.from('users').update({ password_hash }).eq('email', reset.email);
 
-    // Eliminar el token usado
-    await supabaseAdmin.from('password_resets').delete().eq('token', token);
+    await supabaseAdmin.from('users').update({
+      password_hash,
+      reset_token: null,
+      reset_token_expires: null
+    }).eq('id', user.id);
 
-    res.render('auth/reset-password', {
-      title: 'Restablecer Contraseña',
-      token: null,
-      error: null,
-      success: '¡Contraseña actualizada! Ya puedes iniciar sesión.'
-    });
+    res.render('auth/reset-password', { title: 'Nueva Contrasena', error: null, success: 'Contrasena actualizada! Ya puedes iniciar sesion.', token: null });
   } catch (err) {
-    console.error(err);
-    res.render('auth/reset-password', {
-      title: 'Restablecer Contraseña',
-      token,
-      error: 'Error interno. Intenta de nuevo.',
-      success: null
-    });
+    console.error('Reset error:', err);
+    res.render('auth/reset-password', { title: 'Nueva Contrasena', error: 'Error al actualizar la contrasena.', success: null, token });
   }
 });
 

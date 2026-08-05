@@ -37,9 +37,16 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 // Global template variables
-app.use((req, res, next) => {
+const { supabaseAdmin } = require('./config/supabase');
+app.use(async (req, res, next) => {
   res.locals.user = req.session.user || null;
   res.locals.cart = req.session.cart || { items: [], total: 0, count: 0 };
+  try {
+    const { data: brands } = await supabaseAdmin.from('brands').select('id, name, slug, logo_url').eq('is_active', true).order('name');
+    res.locals.navBrands = brands || [];
+  } catch {
+    res.locals.navBrands = [];
+  }
   next();
 });
 

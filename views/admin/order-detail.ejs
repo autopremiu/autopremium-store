@@ -55,7 +55,7 @@
           <% order.order_items.forEach(item => { %>
           <tr>
             <td><%= item.product_name %></td>
-            <td><%= item.product_sku || '—' %></td>
+            <td><%= item.sku || '—' %></td>
             <td><%= item.quantity %></td>
             <td>$<%= Number(item.unit_price).toLocaleString('es-CO') %></td>
             <td>$<%= Number(item.total_price).toLocaleString('es-CO') %></td>
