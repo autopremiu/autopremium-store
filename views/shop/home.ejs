@@ -124,9 +124,10 @@
       <h3>Próximamente</h3>
       <p>Más productos disponibles muy pronto</p>
       <% if (user && user.role === 'admin') { %>
-      <a href="/admin/productos/nuevo" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Agregar Productos
-      </a>
+      <a href="https://wa.me/57<%= process.env.WHATSAPP_NUMBER || '3152411837' %>" target="_blank" rel="noopener">
+    <i class="fab fa-whatsapp"></i>
+    <span class="whatsapp-text">¿Necesitas ayuda?</span>
+  </a>
       <% } %>
     </div>
     <% } %>
